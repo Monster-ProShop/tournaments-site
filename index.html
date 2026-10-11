@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script src="league-i18n.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tournaments by ProDrillOS</title>
+    <meta name="description" content="Tournaments by ProDrillOS — bowling tournament management, team rosters, match scoring and standings.">
+    <link rel="manifest" href="manifest.webmanifest">
+    <meta name="theme-color" content="#101010">
+    <link rel="icon" type="image/png" href="assets/prodrillos-gold-mark-v2.png">
+    <link rel="apple-touch-icon" href="assets/prodrillos-app-icon.png">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-base: #101010; --panel-bg: #191918;
+            --gold: #e4bc58; --gold-dim: rgba(228, 188, 88, 0.22);
+            --gold-light: #f5d990; --gold-soft: rgba(245, 217, 144, 0.15);
+            --text-main: #faf7ef; --text-muted: #b8b3a8; --danger: #ff4757;
+        }
+
+        body { 
+            font-family: 'Inter', sans-serif; margin: 0; padding: 0; 
+            background-color: var(--bg-base); 
+            background-image: radial-gradient(circle at 15% 50%, rgba(228, 188, 88, 0.07), transparent 25%),
+                              radial-gradient(circle at 85% 30%, rgba(245, 217, 144, 0.04), transparent 25%);
+            color: var(--text-main); min-height: 100vh;
+        }
+
+        header { 
+            background: rgba(16, 16, 16, 0.96); backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--gold-dim); padding: 15px 30px;
+            display: flex; justify-content: space-between; align-items: center;
+            position: sticky; top: 0; z-index: 100;
+        }
+
+        .header-brand { display: flex; align-items: center; gap: 15px; }
+        .header-brand img.logo { height: 60px; border-radius: 8px; box-shadow: 0 0 15px var(--gold-dim); }
+        .header-brand h2 {
+            margin: 0; font-size: 24px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase;
+            background: linear-gradient(90deg, #fff, var(--gold));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        .header-brand span.subtitle { display: block; font-size: 11px; color: var(--gold-light); letter-spacing: 2px; text-transform: uppercase; font-weight: 600; }
+        
+        #auth-section { display: flex; gap: 12px; align-items: center; }
+        .hidden { display: none !important; }
+        
+        .container { 
+            max-width: 1000px; margin: 30px auto; background: var(--panel-bg); 
+            backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); padding: 30px; 
+            border-radius: 12px; border: 1px solid var(--gold-dim); box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+        }
+
+        .nav-buttons { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 30px; background: transparent; border: none; box-shadow: none; padding: 0; }
+        button { 
+            background: transparent; color: var(--gold); border: 1px solid var(--gold);
+            padding: 10px 20px; border-radius: 6px; font-weight: 600; font-size: 14px; letter-spacing: 1px;
+            cursor: pointer; transition: all 0.3s ease; text-transform: uppercase;
+        }
+        button:hover { background: var(--gold-dim); box-shadow: 0 0 15px var(--gold-dim); }
+        
+        #btn-lang { border-color: #e4bc58; color: #e4bc58; }
+        #btn-lang:hover { background: rgba(228, 188, 88, 0.15); box-shadow: 0 0 15px rgba(228, 188, 88, 0.2); }
+        #btn-login { border-color: var(--gold-light); color: var(--gold-light); }
+        #btn-login:hover { background: var(--gold-soft); box-shadow: 0 0 15px var(--gold-soft); }
+        .danger-btn { border-color: var(--danger); color: var(--danger); }
+        .danger-btn:hover { background: rgba(255, 71, 87, 0.2); box-shadow: 0 0 15px rgba(255, 71, 87, 0.3); }
+
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; margin-bottom: 8px; color: var(--text-muted); }
+        .form-group input, .form-group select, .dropdown-match select { 
+            width: 100%; padding: 12px; box-sizing: border-box; background: rgba(0, 0, 0, 0.5);
+            border: 1px solid #49453a; color: var(--text-main); border-radius: 6px; font-family: 'Inter', sans-serif; transition: all 0.3s ease;
+        }
+        .form-group input:focus, .form-group select:focus, .dropdown-match select:focus { outline: none; border-color: var(--gold); box-shadow: 0 0 10px var(--gold-dim); }
+
+        .dropdown-match { margin-bottom: 25px; padding: 20px; background: rgba(0, 0, 0, 0.3); border-left: 4px solid var(--gold-light); border-radius: 6px; }
+        .team-card { background: rgba(0, 0, 0, 0.3); padding: 20px; margin-bottom: 20px; border-radius: 8px; border-left: 4px solid var(--gold); }
+        .match-card { margin-bottom: 30px; padding: 15px; border: 1px solid var(--gold-dim); border-radius: 8px; background: rgba(0,0,0,0.2); }
+        
+        .score-grid { width: 100%; border-collapse: collapse; margin-top: 15px; background: rgba(0, 0, 0, 0.2); border-radius: 6px; overflow: hidden; }
+        .score-grid th, .score-grid td { padding: 10px; text-align: center; border: 1px solid #49453a; }
+        .score-grid th { background: rgba(228, 188, 88, 0.09); color: var(--gold); font-size: 12px; text-transform: uppercase; }
+        .score-grid input { width: 80px; padding: 8px; text-align: center; }
+        .lane-input { background: rgba(245, 217, 144, 0.08) !important; border-color: var(--gold-soft) !important; color: var(--gold-light) !important; }
+        
+        .active-game-input { background: rgba(255,255,255,0.1) !important; border-color: var(--gold) !important; }
+
+        h3 { color: #fff; border-bottom: 1px solid var(--gold-dim); padding-bottom: 15px; margin-top: 0; font-weight: 300; letter-spacing: 1px; }
+
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: var(--bg-base); }
+        ::-webkit-scrollbar-thumb { background: var(--gold-dim); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--gold); }
+    </style>
+    <link rel="stylesheet" href="brand.css">
+</head>
+<body>
+
+<header>
+    <a class="header-brand" href="./" aria-label="Tournaments by ProDrillOS home">
+        <img src="assets/prodrillos-gold-mark-v2.png" alt="" class="logo" width="100" height="64">
+        <span class="brand-wordmark"><span class="brand-title">Tournaments</span><span class="brand-signature">by <strong>ProDrill<span class="gold-type">OS</span></strong></span></span>
+    </a>
+    <div id="auth-section">
+        <button id="btn-lang" onclick="toggleLanguage()">🌐 EN / ES</button>
+        <button id="btn-login" data-i18n="btn_login" onclick="window.TournamentCloud?.accountAction()">Sign in</button>
+        <button id="btn-logout" class="hidden" data-i18n="btn_logout" onclick="window.TournamentCloud?.signOut()">Sign out</button>
+    </div>
+</header>
+
+<main id="main-content">
+<section class="tournament-intro" aria-labelledby="intro-title">
+    <div><p class="eyebrow" data-i18n="intro_eyebrow">THE TOURNAMENT DESK</p>
+    <h1 id="intro-title" data-i18n="intro_title">Every frame. Every point.</h1>
+    <p class="intro-copy" data-i18n="intro_desc">Your teams, matches and scores. One place to manage the competition.</p></div>
+    <img class="intro-mark" src="assets/prodrillos-gold-mark-v2.png" alt="" width="250" height="170">
+</section>
+<div id="cloud-notice" role="status" aria-live="polite"></div>
+<section id="account-panel" class="container account-panel">
+ <div><p class="eyebrow">PRODRILLOS ACCOUNT</p><h2>Welcome to your tournament desk</h2><p>Sign in with your Brackets account, or create an account here. Your verified email connects your bowler profile across both sites.</p></div>
+ <form id="signin-form" class="cloud-form"><label>Email<input id="account-email" type="email" autocomplete="email" required></label><label>Password<input id="account-password" type="password" autocomplete="current-password" minlength="8" required></label><div class="action-row"><button type="submit" class="primary">Sign in</button><button type="button" id="register-account">Create account</button></div></form>
+ <form id="verify-form" class="cloud-form hidden"><label>Email verification code<input id="verification-code" autocomplete="one-time-code" inputmode="numeric" required></label><button>Verify email</button><button type="button" id="resend-code">Resend code</button></form>
+</section>
+<section id="competition-panel" class="container hidden">
+ <div class="panel-heading"><div><p class="eyebrow">YOUR COMPETITIONS</p><h2>Leagues & tournaments</h2></div><div class="account-controls"><span id="account-name"></span><label id="account-mode-wrap" class="hidden">Use account as<select id="account-mode"><option value="admin">Admin</option><option value="user">Bowler</option></select></label></div></div>
+ <section id="bowler-career" class="hidden"><h3>My Bowling Dashboard</h3><div id="career-stats" class="stat-grid"></div><div id="career-competitions" class="competition-list"></div></section>
+ <div class="cloud-form"><label>Find a competition<input id="competition-search" type="search" placeholder="Name, city or bowling center"></label><button id="search-competitions">Search</button></div><div id="competition-list" class="competition-list"></div>
+ <details id="create-competition-details" class="hidden"><summary>Create a league or tournament</summary><form id="create-competition" class="cloud-form field-grid"><label>Name<input name="name" required maxlength="120"></label><label>Type<select name="kind"><option value="league">League</option><option value="tournament">Tournament</option></select></label><label>Country<input name="country" required></label><label>State / region<input name="region" required></label><label>City<input name="city" required></label><label>Bowling center<input name="bowlingCenter" required></label><button class="primary">Create competition</button></form></details>
+ <section id="superadmin-users" class="hidden admin-users"><p class="eyebrow">SUPERADMIN</p><h3>Registered user access</h3><p class="hint">Set registered accounts as Admin or User. Admins can switch to Bowler mode when they participate in a league.</p><label>Find user by email<input id="admin-user-search" type="search" autocomplete="off" placeholder="Search registered email"></label><div id="admin-user-results"></div></section>
+</section>
+<section id="session-panel" class="container hidden">
+ <div class="panel-heading"><div><p id="competition-location" class="eyebrow"></p><h2 id="competition-name"></h2></div><button id="back-competitions">All competitions</button></div>
+ <div class="league-tabs" role="tablist"><button class="active" data-league-view="league-home">Overview</button><button data-league-view="league-team-standings">Team Standings</button><button data-league-view="league-bowler-standings">Bowler Standings</button><button data-league-view="league-honor-scores">Honor Scores</button><button data-league-view="league-calendar">Calendar</button><button data-league-view="league-finances">Finances</button><button id="league-teams-tab" data-league-view="league-teams">Teams & Rosters</button><button id="league-integrations-tab" data-league-view="league-integrations">Integrations</button><button id="league-setup-tab" data-league-view="league-setup">League Setup</button></div>
+ <section id="league-home" class="league-view"><div class="stat-grid" id="league-stat-grid"></div><div class="action-row"><label>Bowling session<select id="session-select"><option value="">Choose a session</option></select></label><button id="refresh-session">Refresh scores</button></div></section>
+ <div class="action-row hidden" id="league-export-actions"><button id="export-league-standings">Export current standings</button><button id="export-weekly-results">Export weekly results</button></div>
+ <section id="league-team-standings" class="league-view hidden"><h3>Team Standings</h3><div id="team-standings"></div></section>
+ <section id="league-bowler-standings" class="league-view hidden"><h3>Bowler Standings</h3><div id="bowler-standings"></div></section>
+ <section id="league-honor-scores" class="league-view hidden"><h3>Honor Scores</h3><div id="honor-scores"></div></section>
+ <section id="league-calendar" class="league-view hidden"><div class="panel-heading"><h3>League Calendar</h3><span class="hint">Weekly matchups and lane assignments</span></div><div id="league-calendar-list"></div></section>
+ <section id="league-finances" class="league-view hidden"><h3>League Finances</h3><p class="hint">Projected lineage, prize fund, sponsorships, and amounts due from the configured season.</p><div id="league-finance-summary" class="stat-grid"></div></section>
+ <section id="league-teams" class="league-view hidden"><div class="panel-heading"><div><h3>Teams & Rosters</h3><p class="hint">Assign each bowler once as active or substitute.</p></div><button id="build-league-teams">Build Team Forms</button></div><form id="league-teams-form"><div id="league-team-editor"></div><button class="primary hidden" id="save-league-teams">Save Teams & Rosters</button></form></section>
+ <section id="league-integrations" class="league-view hidden"><h3>Brackets Integration</h3><p>Use this code in Brackets to connect the same league roster, bowler IDs, handicaps, and bowling session.</p><div class="integration-code" id="integration-code">No connection code yet</div><br><button id="generate-integration-code">Create / Replace League Code</button><p class="hint">Replacing the code prevents new connections using the previous code. Existing score history is retained.</p></section>
+ <section id="league-setup" class="league-view hidden"><h3>Configure League</h3><p class="hint">Save the rules first, then generate all league sessions and matches.</p>
+  <form id="league-configuration" class="league-form">
+   <fieldset><legend>League format</legend><div class="field-grid"><label>Number of teams<input name="numberOfTeams" type="number" min="4" max="48" step="2" required></label><label>Bowlers permitted per team<input name="bowlersPerTeam" type="number" min="1" max="36" required></label><label>Active bowlers per session<input name="activeBowlers" type="number" min="1" max="12" required></label><label>Substitute bowlers per roster<input name="substituteBowlers" type="number" min="0" max="24" required></label><label>Number of sessions<input name="numberOfSessions" type="number" min="1" max="60" required></label><label>Games per bowler per session<input name="gamesPerBowler" type="number" min="1" max="12" required></label><label>First session date<input name="startDate" type="date" required></label><label>First lane<input name="startLane" type="number" min="1" required></label><label>Position rounds<input name="positionRounds" placeholder="Example: 12, 24, 36"></label></div></fieldset>
+   <fieldset><legend>Divisions</legend><div class="field-grid"><label>Team division names<input name="teamDivisions" placeholder="North, South"></label><label>Bowler division names<input name="bowlerDivisions" placeholder="A, B, C"></label></div></fieldset>
+   <fieldset><legend>Standard league points</legend><div class="field-grid"><label>Points per team game won<input name="gameWin" type="number" min="0" step="0.5" required></label><label>Points per team game tie<input name="gameTie" type="number" min="0" step="0.5" required></label><label>Points per team series won<input name="seriesWin" type="number" min="0" step="0.5" required></label><label>Points per team series tie<input name="seriesTie" type="number" min="0" step="0.5" required></label></div><label>Bonus points, one per line <span class="hint">Concept | Points</span><textarea name="bonuses" rows="3" placeholder="Perfect game | 1"></textarea></label></fieldset>
+   <fieldset><legend>Handicap rules</legend><div class="field-grid"><label>Handicap percent<input name="handicapPercent" type="number" min="0" max="100" required></label><label>Based on average<input name="handicapBase" type="number" min="0" max="300" required></label><label>Minimum handicap<input name="minimumHandicap" type="number" min="0" max="300" required></label><label>Maximum handicap<input name="maximumHandicap" type="number" min="0" max="300" required></label></div><div id="division-handicap-rules"></div></fieldset>
+   <fieldset><legend>League finances</legend><div class="field-grid"><label>Cost per game<input name="costPerGame" type="number" min="0" step="0.01" required></label><label>Prize fund per bowler / session<input name="prizeFundPerSession" type="number" min="0" step="0.01" required></label></div><h4>Bowling-center sponsorships</h4><p class="hint">Enter the amount per session that the center covers. Bowlers are listed alphabetically.</p><div id="sponsorship-list"></div></fieldset>
+   <div class="action-row"><button class="primary" type="submit">Save League Configuration</button><button id="generate-league-schedule" type="button">Generate League Matches / Sessions</button></div>
+  </form>
+ </section>
+ <div id="bowler-claim" class="hidden cloud-form"><label>Your bowler profile<select id="claim-profile"></select></label><button id="claim-bowler">Confirm my bowler profile</button></div>
+ <div id="session-manager" class="hidden"><details><summary>Add or reschedule one session</summary><form id="create-session" class="cloud-form field-grid"><label>Session label<input name="label" placeholder="Week 1 · Evening" required maxlength="120"></label><label>Date<input name="date" type="date" required></label><button class="primary">Create session</button></form></details>
+ <details><summary>Add a bowler to the shared roster</summary><form id="add-profile" class="cloud-form field-grid"><label>Bowler name<input name="name" required maxlength="120"></label><label>Bowler login email<input name="email" type="email" placeholder="For verified account linking"></label><button>Add bowler</button></form></details>
+ </div>
+ <p id="session-status" class="hint"></p><div id="season-summary"></div>
+</section>
+<div id="tournament-workspace" class="hidden">
+<nav class="nav-buttons container" aria-label="Tournament navigation">
+    <button data-page="page-results" aria-current="page" onclick="showPage('page-results')" data-i18n="nav_results">Leaderboards</button>
+    <button data-page="page-matches" onclick="showPage('page-matches')" data-i18n="nav_matches">Match Data</button>
+    
+    <span id="admin-nav" class="hidden" style="display: flex; gap: 12px; flex-wrap: wrap;">
+        <button data-page="page-setup" onclick="showPage('page-setup')" data-i18n="nav_setup">⚙️ Parameters</button>
+        <button data-page="page-team-setup" onclick="showPage('page-team-setup')" data-i18n="nav_roster">👥 Roster Node</button>
+        <button data-page="page-admin-matches" onclick="showPage('page-admin-matches')" data-i18n="nav_input">✏️ Input Matrix</button>
+        <button onclick="exportData()" style="border-color: var(--text-muted); color: var(--text-main);" data-i18n="nav_export">💾 Export JSON</button>
+        <input type="file" id="importFile" style="display:none" onchange="importData(event)">
+        <button onclick="document.getElementById('importFile').click()" style="border-color: var(--text-muted); color: var(--text-main);" data-i18n="nav_import">📂 Import JSON</button>
+    </span>
+</nav>
+
+<div id="page-results" class="container">
+    <h3 data-i18n="results_title">Tournament standings</h3>
+    <p style="color: var(--text-muted);" data-i18n="results_desc">Real-time standings and individual division results will populate here.</p>
+    <div id="results-display"><div class="standings-placeholder"><span class="placeholder-symbol" aria-hidden="true">—</span><p data-i18n="standings_placeholder">Standings will appear here as tournament results become available.</p></div></div>
+</div>
+
+<div id="page-matches" class="container hidden">
+    <h3 data-i18n="matches_title">Matches & scores</h3>
+    <p style="color: var(--text-muted);" data-i18n="matches_desc">Public access grid for team match-ups and game scores.</p>
+</div>
+
+<div id="page-setup" class="container hidden">
+    <h3 data-i18n="setup_title">Tournament setup</h3>
+    
+    <div class="form-group">
+        <label data-i18n="setup_roster">Team & Player Roster Setup</label>
+        <div style="display: flex; gap: 15px;">
+            <input type="number" id="qty-teams" placeholder="Total Teams (e.g. 16)" style="width: 50%;">
+            <input type="number" id="qty-players" placeholder="Players per Team (e.g. 4)" style="width: 50%;">
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label data-i18n="setup_team_divs">Team Divisions Stratification</label>
+        <input type="number" id="qty-team-divs" placeholder="Number of Team Divisions (e.g. 2)" min="1" onchange="renderTeamDivisionInputs()">
+        <div id="team-division-names-container" style="margin-top: 10px; display: flex; flex-direction: column; gap: 10px;"></div>
+    </div>
+
+    <div class="form-group">
+        <label data-i18n="setup_bowler_divs">Individual Divisions Stratification</label>
+        <input type="number" id="qty-bowler-divs" placeholder="Number of Bowler Divisions (e.g. 4)" min="1" onchange="renderBowlerDivisionInputs()">
+        <div id="bowler-division-names-container" style="margin-top: 10px; display: flex; flex-direction: column; gap: 10px;"></div>
+    </div>
+
+    <div class="form-group">
+        <label data-i18n="setup_lanes">Lane Allocation & Movement Protocol</label>
+        <div style="display: flex; gap: 15px; margin-bottom: 10px;">
+            <input type="number" id="lane-start" placeholder="Starting Lane (e.g. 1)" style="width: 50%;">
+            <input type="number" id="lane-end" placeholder="Ending Lane (e.g. 12)" style="width: 50%;">
+        </div>
+        <select id="lane-movement">
+            <option value="none" data-i18n="lane_opt_none">Static Alignment - No Movement</option>
+            <option value="right1" data-i18n="lane_opt_r1">One pair to the right</option>
+            <option value="left1" data-i18n="lane_opt_l1">One pair to the left</option>
+            <option value="evenR_oddL_1" data-i18n="lane_opt_erol1">Evens to the right / Odds to the left (1 pair)</option>
+            <option value="evenR_oddL_2" data-i18n="lane_opt_erol2">Evens to the right / Odds to the left (2 pair)</option>
+            <option value="pos_right1" data-i18n="lane_opt_posR1">Positions round (Move 1 pair right)</option>
+            <option value="fan_spread" data-i18n="lane_opt_fan">Fan spread / Abanico (Positions round)</option>
+        </select>
+    </div>
+
+    <div class="form-group">
+        <label data-i18n="setup_score">Scoring Protocol</label>
+        <select id="point-system">
+            <option value="team" data-i18n="score_opt_team">Team Win/Loss Absolute</option>
+            <option value="player" data-i18n="score_opt_player">Individual + Team Aggregation</option>
+        </select>
+    </div>
+    
+    <div class="form-group">
+        <label data-i18n="setup_cycles">Total Cycle Count (Games)</label>
+        <input type="number" id="total-games" min="1" value="3">
+    </div>
+    
+    <div class="form-group">
+        <label data-i18n="setup_finals">Finals Bracket Architecture</label>
+        <select id="team-finals">
+            <option value="stepladder" data-i18n="finals_opt_step">Stepladder Progression</option>
+            <option value="round_robin" data-i18n="finals_opt_round">Round Robin Matrix</option>
+            <option value="total_pins" data-i18n="finals_opt_pins">Total Pins Output (Simultaneous)</option>
+            <option value="baker" data-i18n="finals_opt_baker">Baker System Alternation</option>
+        </select>
+    </div>
+    
+    <div class="form-group">
+        <label data-i18n="setup_hc">Handicap Algorithm</label>
+        <div id="handicap-rules-container" style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 10px;">
+            <!-- Dynamic HC rules based on divisions inject here -->
+        </div>
+        <span style="font-size: 11px; color: var(--text-muted);" data-i18n="setup_hc_note">* Define rules per individual division. Defaults to Global if no divisions are set.</span>
+    </div>
+    
+    <button onclick="saveParameters()" style="margin-top: 10px; width: 100%; border-color: var(--gold-light); color: var(--gold-light);" data-i18n="btn_lock">Lock Parameters</button>
+</div>
+
+<div id="page-team-setup" class="container hidden">
+    <h3 data-i18n="roster_title">Teams & bowlers</h3>
+    <p style="color: var(--text-muted); margin-bottom: 20px;" data-i18n="roster_desc">Deploy input fields based on the quantities established in Parameters.</p>
+    
+    <div style="display: flex; gap: 10px; margin-bottom: 25px;">
+        <button onclick="buildRosterForms()" style="border-color: var(--gold); color: var(--gold);" data-i18n="btn_deploy">Deploy Roster Matrix</button>
+        <button id="test-data-btn" class="hidden" onclick="generateTestData()" style="border-color: #e4bc58; color: #e4bc58;" data-i18n="btn_test">🧪 Inject Test Data</button>
+    </div>
+    
+    <div id="roster-forms-container"></div>
+    
+    <button id="save-roster-btn" class="hidden" onclick="saveRoster()" style="margin-top: 15px; width: 100%; border-color: var(--gold-light); color: var(--gold-light);" data-i18n="btn_commit_roster">Commit Roster Data & Generate Matches</button>
+</div>
+
+<div id="page-admin-matches" class="container hidden">
+    <h3 data-i18n="input_title">Score entry</h3>
+    <div class="dropdown-match">
+        <label style="color: var(--gold-light); display: block; margin-bottom: 8px; font-weight: 600; font-size: 13px; text-transform: uppercase;" data-i18n="input_target">Select Target Game:</label>
+        <select id="match-selector" onchange="renderScoreMatrix()">
+            <option value="" data-i18n="input_awaiting">-- Awaiting Match Generation --</option>
+        </select>
+    </div>
+    
+    <div id="score-matrix-container">
+        <p style="color: var(--text-muted);" data-i18n="input_desc">Score entry matrix will render here once a game is selected.</p>
+    </div>
+    
+    <div style="display: flex; gap: 10px; margin-top: 20px;">
+        <button id="commit-scores-btn" class="hidden" onclick="window.TournamentCloud.commitScores()" style="flex: 1; border-color: var(--gold);" data-i18n="btn_commit_scores">Commit Match Scores</button>
+        <button id="generate-next-btn" class="hidden" onclick="generateNextGameMatches()" style="flex: 1; border-color: #e4bc58; color: #e4bc58;" data-i18n="btn_generate_next">Generate Matches for Next Game</button>
+    </div>
+</div>
+
+</div>
+</main>
+<footer class="site-footer"><span>Tournaments <span class="footer-by">by ProDrill<span class="gold-type">OS</span></span></span><span data-i18n="storage_note">Accounts, rosters and scores are saved securely online.</span></footer>
+<script>
+    const dict = {
+        en: {
+            intro_eyebrow: "THE TOURNAMENT DESK", intro_title: "Every frame. Every point.", intro_desc: "Your teams, matches and scores. One place to manage the competition.",
+            standings_placeholder: "Standings will appear here as tournament results become available.", storage_note: "Accounts, rosters and scores are saved securely online.",
+            subtitle: "Synergy Experts", btn_login: "Sign in", btn_logout: "Sign out",
+            nav_results: "Leaderboards", nav_matches: "Match Data", nav_setup: "⚙️ Parameters",
+            nav_roster: "👥 Roster Node", nav_input: "✏️ Input Matrix", nav_export: "💾 Export JSON",
+            nav_import: "📂 Import JSON",
+            results_title: "Tournament standings", results_desc: "Real-time standings and individual division results will populate here.",
+            matches_title: "Matches & scores", matches_desc: "Public access grid for team match-ups and game scores.",
+            setup_title: "Tournament setup", setup_roster: "Team & Player Roster Setup",
+            setup_team_divs: "Team Divisions Stratification", setup_bowler_divs: "Individual Divisions Stratification", 
+            div_name_placeholder: "Division Name", sel_team_div: "Select Team Division", sel_bowler_div: "Select Individual Division",
+            setup_lanes: "Lane Allocation & Movement Protocol", 
+            lane_opt_none: "Static Alignment - No Movement", lane_opt_r1: "One pair to the right", lane_opt_l1: "One pair to the left",
+            lane_opt_erol1: "Evens to the right / Odds to the left (1 pair)", lane_opt_erol2: "Evens to the right / Odds to the left (2 pair)",
+            lane_opt_posR1: "Positions round (Move 1 pair right)", lane_opt_fan: "Fan spread / Abanico (Positions round)",
+            setup_score: "Scoring Protocol", score_opt_team: "Team Win/Loss Absolute", score_opt_player: "Individual + Team Aggregation",
+            setup_cycles: "Total Cycle Count (Games)", setup_finals: "Finals Bracket Architecture", finals_opt_step: "Stepladder Progression",
+            finals_opt_round: "Round Robin Matrix", finals_opt_pins: "Total Pins Output (Simultaneous)", finals_opt_baker: "Baker System Alternation",
+            setup_hc: "Handicap Algorithm", setup_hc_note: "* Define rules per individual division. Defaults to Global if no divisions are set.",
+            btn_lock: "Lock Parameters",
+            roster_title: "Teams & bowlers", roster_desc: "Deploy input fields based on the quantities established in Parameters.",
+            btn_deploy: "Deploy Roster Matrix", btn_test: "🧪 Inject Test Data", btn_commit_roster: "Commit Roster Data & Generate Matches",
+            input_title: "Score entry", input_target: "Select Target Game:", input_awaiting: "-- Awaiting Match Generation --",
+            input_desc: "Score entry matrix for all teams will render here once a game is selected.", btn_commit_scores: "Commit Match Scores",
+            btn_generate_next: "Generate Matches for Next Game",
+            alert_telemetry_saved: "Telemetry Saved!", alert_access_denied: "Access Denied.", prompt_admin: "Awaiting System Override (demo: admin):",
+            alert_params_locked: "Parameters locked. Proceed to Roster Node.", alert_sys_error: "System Error: Please assign Total Teams and Players per Team in the Parameters tab first.",
+            alert_roster_committed: "Roster committed. Matchups successfully generated in Input Matrix.", alert_data_imported: "External data core integrated successfully!",
+            alert_next_generated: "New matchups generated based on standings and selected lane movement protocol.",
+            confirm_purge: "CRITICAL WARNING: Purge all tournament telemetry?", confirm_purge_2: "FINAL OVERRIDE: This action is irreversible. Execute purge?",
+            alert_purged: "System purged. Ready for new input.", placeholder_team: "Enter Team Name", placeholder_bowler: "Bowler Name",
+            ph_qty_team_divs: "Number of Team Divisions (e.g. 2)", ph_qty_bowler_divs: "Number of Bowler Divisions (e.g. 4)",
+            ph_hc_base: "Base Avg", ph_hc_perc: "% Multiplier", ph_hc_min: "Min HDCP", ph_hc_max: "Max HDCP", ph_avg: "Avg"
+        },
+        es: {
+            intro_eyebrow: "CENTRO DEL TORNEO", intro_title: "Cada tiro. Cada punto.", intro_desc: "Tus equipos, partidas y resultados. Un solo lugar para gestionar la competencia.",
+            standings_placeholder: "Las posiciones aparecerán aquí cuando estén disponibles los resultados del torneo.", storage_note: "Las cuentas, plantillas y resultados se guardan en línea.",
+            subtitle: "Expertos en Sinergia", btn_login: "Administrador", btn_logout: "Desconectar",
+            nav_results: "Posiciones", nav_matches: "Partidas", nav_setup: "⚙️ Parámetros",
+            nav_roster: "👥 Equipos", nav_input: "✏️ Captura de Resultados", nav_export: "💾 Exportar JSON",
+            nav_import: "📂 Importar JSON", nav_purge: "🗑️ Borrar Sistema",
+            results_title: "Posiciones del torneo", results_desc: "La tabla de posiciones en tiempo real y resultados individuales aparecerán aquí.",
+            matches_title: "Partidas y resultados", matches_desc: "Vista pública de los enfrentamientos por equipo y puntuaciones.",
+            setup_title: "Configuración del torneo", setup_roster: "Configuración de Equipos y Jugadores",
+            setup_team_divs: "Estratificación de Divisiones de Equipos", setup_bowler_divs: "Estratificación de Divisiones Individuales", 
+            div_name_placeholder: "Nombre de la División", sel_team_div: "Seleccionar Div. Equipo", sel_bowler_div: "Seleccionar Div. Individual",
+            setup_lanes: "Asignación de Pistas y Rotación", 
+            lane_opt_none: "Alineación Estática - Sin Movimiento", lane_opt_r1: "Un par a la derecha", lane_opt_l1: "Un par a la izquierda",
+            lane_opt_erol1: "Pares a la derecha / Nones a la izquierda (1 par)", lane_opt_erol2: "Pares a la derecha / Nones a la izquierda (2 pares)",
+            lane_opt_posR1: "Ronda de posiciones (1 par a la derecha)", lane_opt_fan: "Abanico / Fan spread (Ronda de posiciones)",
+            setup_score: "Sistema de Puntuación", score_opt_team: "Ganados/Perdidos por Equipo", score_opt_player: "Puntos Individuales + Puntos por Equipo",
+            setup_cycles: "Total de Líneas (Juegos)", setup_finals: "Formato de Finales", finals_opt_step: "Escalera (Stepladder)",
+            finals_opt_round: "Todos contra Todos (Round Robin)", finals_opt_pins: "Pinos Totales (Simultáneo)", finals_opt_baker: "Formato Baker",
+            setup_hc: "Algoritmo de Hándicap (Ventaja)", setup_hc_note: "* Define reglas por división individual. Usa Global si no hay divisiones.",
+            btn_lock: "Guardar Parámetros",
+            roster_title: "Equipos y jugadores", roster_desc: "Despliega los campos según las cantidades definidas en Parámetros.",
+            btn_deploy: "Generar Matriz de Equipos", btn_test: "🧪 Inyectar Datos de Prueba", btn_commit_roster: "Guardar Equipos y Generar Partidas",
+            input_title: "Captura de resultados", input_target: "Seleccionar Juego Objetivo:", input_awaiting: "-- Esperando Generación de Partidas --",
+            input_desc: "La cuadrícula de resultados para todos los equipos aparecerá al seleccionar un juego.", btn_commit_scores: "Guardar Resultados del Juego",
+            btn_generate_next: "Generar Partidas para Siguiente Juego",
+            alert_telemetry_saved: "¡Datos guardados con éxito!", alert_access_denied: "Acceso Denegado.", prompt_admin: "Ingrese contraseña (demo: admin):",
+            alert_params_locked: "Parámetros guardados. Proceda a la pestaña de Equipos.", alert_sys_error: "Error del Sistema: Asigne el total de equipos y jugadores por equipo en Parámetros primero.",
+            alert_roster_committed: "Equipos guardados. Partidas generadas exitosamente en la Captura de Resultados.", alert_data_imported: "¡Datos externos integrados exitosamente!",
+            alert_next_generated: "Nuevas partidas generadas basadas en posiciones y el protocolo de movimiento seleccionado.",
+            confirm_purge: "ADVERTENCIA CRÍTICA: ¿Eliminar todos los datos del torneo?", confirm_purge_2: "CONFIRMACIÓN FINAL: Esta acción es irreversible. ¿Proceder?",
+            alert_purged: "Sistema borrado. Listo para nuevos datos.", placeholder_team: "Nombre del Equipo", placeholder_bowler: "Nombre del Jugador",
+            ph_qty_team_divs: "Cantidad Div. de Equipo (ej. 2)", ph_qty_bowler_divs: "Cantidad Div. de Jugadores (ej. 4)",
+            ph_hc_base: "Prom. Base", ph_hc_perc: "% Multiplicador", ph_hc_min: "HDCP Min", ph_hc_max: "HDCP Max", ph_avg: "Prom."
+        }
+    };
+
+    let currentLang = window.LeagueI18n.language;
+    
+    function applyLanguage() {
+        document.querySelectorAll('[data-i18n]').forEach(el => {
+            const key = el.getAttribute('data-i18n');
+            if (dict[currentLang][key]) {
+                if (el.tagName === 'INPUT' && (el.type === 'text' || el.type === 'number')) el.placeholder = dict[currentLang][key];
+                else el.textContent = dict[currentLang][key];
+            }
+        });
+        
+        document.getElementById('qty-team-divs').placeholder = getTranslation('ph_qty_team_divs');
+        document.getElementById('qty-bowler-divs').placeholder = getTranslation('ph_qty_bowler_divs');
+        
+        document.querySelectorAll('input[id^="hc-base-"]').forEach(el => el.placeholder = getTranslation('ph_hc_base'));
+        document.querySelectorAll('input[id^="hc-perc-"]').forEach(el => el.placeholder = getTranslation('ph_hc_perc'));
+        document.querySelectorAll('input[id^="hc-min-"]').forEach(el => el.placeholder = getTranslation('ph_hc_min'));
+        document.querySelectorAll('input[id^="hc-max-"]').forEach(el => el.placeholder = getTranslation('ph_hc_max'));
+
+        document.querySelectorAll('input[id^="team-div-name-"], input[id^="bowler-div-name-"]').forEach(el => { el.placeholder = getTranslation('div_name_placeholder'); });
+        document.querySelectorAll('input[id^="team-"][id$="-name"]').forEach(el => { el.placeholder = getTranslation('placeholder_team'); });
+        document.querySelectorAll('input[id*="-player-"][id$="-avg"]').forEach(el => { el.placeholder = getTranslation('ph_avg'); });
+        document.querySelectorAll('input[id*="-player-"]:not([id$="-avg"]):not([id$="-div"])').forEach(el => { el.placeholder = getTranslation('placeholder_bowler'); });
+        document.documentElement.lang = currentLang==='es'?'es-MX':'en';
+        window.LeagueI18n.setLanguage(currentLang);
+    }
+
+    function toggleLanguage() {
+        currentLang = currentLang === 'en' ? 'es' : 'en';
+        applyLanguage();
+    }
+    
+    function getTranslation(key) { return dict[currentLang][key] || key; }
+
+    let isAdmin = false;
+    let tournamentData = { teams: [], matches: [], config: {} };
+    
+    window.onload = () => { 
+        applyLanguage(); 
+        renderHandicapInputs();
+        if(tournamentData.matches && tournamentData.matches.length > 0) populateMatchDropdown(); 
+    };
+
+    function showPage(pageId) {
+        document.querySelectorAll('#tournament-workspace .container').forEach(el => {
+            if(el.id !== 'auth-section' && !el.classList.contains('nav-buttons')) el.classList.add('hidden');
+        });
+        document.getElementById(pageId).classList.remove('hidden');
+        document.querySelectorAll('[data-page]').forEach(button => {
+            if (button.dataset.page === pageId) button.setAttribute('aria-current', 'page');
+            else button.removeAttribute('aria-current');
+        });
+    }
+
+    function renderTeamDivisionInputs() {
+        const count = parseInt(document.getElementById('qty-team-divs').value) || 0;
+        const container = document.getElementById('team-division-names-container');
+        container.innerHTML = '';
+        for(let i=1; i<=count; i++) {
+            container.innerHTML += `<input type="text" id="team-div-name-${i}" placeholder="${getTranslation('div_name_placeholder')} ${i}">`;
+        }
+    }
+
+    function renderBowlerDivisionInputs() {
+        const count = parseInt(document.getElementById('qty-bowler-divs').value) || 0;
+        const container = document.getElementById('bowler-division-names-container');
+        container.innerHTML = '';
+        for(let i=1; i<=count; i++) {
+            container.innerHTML += `<input type="text" id="bowler-div-name-${i}" placeholder="${getTranslation('div_name_placeholder')} ${i}" oninput="updateHcLabels()">`;
+        }
+        renderHandicapInputs();
+    }
+
+    function updateHcLabels() {
+        const count = parseInt(document.getElementById('qty-bowler-divs').value) || 0;
+        for(let i=1; i<=count; i++) {
+            let name = document.getElementById(`bowler-div-name-${i}`)?.value || `${getTranslation('div_name_placeholder')} ${i}`;
+            let lbl = document.getElementById(`hc-lbl-${i}`);
+            if(lbl) lbl.innerText = name;
+        }
+    }
+
+    function renderHandicapInputs() {
+        const count = parseInt(document.getElementById('qty-bowler-divs').value) || 0;
+        const container = document.getElementById('handicap-rules-container');
+        container.innerHTML = '';
+        
+        const createHcRow = (label, id) => `
+            <div style="background: rgba(0,0,0,0.2); padding: 10px; border-radius: 6px;">
+                <label id="hc-lbl-${id}" style="font-size: 11px; color: var(--gold); margin-bottom: 5px; font-weight: 800;">${label}</label>
+                <div style="display: flex; gap: 15px;">
+                    <input type="number" id="hc-base-${id}" placeholder="${getTranslation('ph_hc_base')}" style="flex: 1;">
+                    <input type="number" id="hc-perc-${id}" placeholder="${getTranslation('ph_hc_perc')}" style="flex: 1;">
+                    <input type="number" id="hc-min-${id}" placeholder="${getTranslation('ph_hc_min')}" style="flex: 1;">
+                    <input type="number" id="hc-max-${id}" placeholder="${getTranslation('ph_hc_max')}" style="flex: 1;">
+                </div>
+            </div>`;
+
+        if (count === 0) {
+            container.innerHTML = createHcRow('GLOBAL HANDICAP', 'global');
+        } else {
+            for(let i=1; i<=count; i++) {
+                let divName = document.getElementById(`bowler-div-name-${i}`)?.value || `${getTranslation('div_name_placeholder')} ${i}`;
+                container.innerHTML += createHcRow(divName, i);
+            }
+        }
+        applyLanguage();
+    }
+
+    async function saveParameters() {
+        let teamDivs = [], bowlerDivs = [], hcRules = {};
+        
+        const tCount = parseInt(document.getElementById('qty-team-divs').value) || 0;
+        for(let i=1; i<=tCount; i++) {
+            let el = document.getElementById(`team-div-name-${i}`);
+            if(el) teamDivs.push(el.value || `Team Div ${i}`);
+        }
+        
+        const bCount = parseInt(document.getElementById('qty-bowler-divs').value) || 0;
+        if (bCount === 0) {
+            hcRules['global'] = {
+                base: document.getElementById('hc-base-global')?.value,
+                perc: document.getElementById('hc-perc-global')?.value,
+                min: document.getElementById('hc-min-global')?.value,
+                max: document.getElementById('hc-max-global')?.value
+            };
+        } else {
+            for(let i=1; i<=bCount; i++) {
+                let divName = document.getElementById(`bowler-div-name-${i}`)?.value || `Bowler Div ${i}`;
+                bowlerDivs.push(divName);
+                hcRules[divName] = {
+                    base: document.getElementById(`hc-base-${i}`)?.value,
+                    perc: document.getElementById(`hc-perc-${i}`)?.value,
+                    min: document.getElementById(`hc-min-${i}`)?.value,
+                    max: document.getElementById(`hc-max-${i}`)?.value
+                };
+            }
+        }
+
+        tournamentData.config = {
+            qtyTeams: document.getElementById('qty-teams').value, 
+            qtyPlayers: document.getElementById('qty-players').value,
+            teamDivisions: teamDivs, 
+            bowlerDivisions: bowlerDivs, 
+            hcRules: hcRules,
+            laneStart: document.getElementById('lane-start').value, 
+            laneEnd: document.getElementById('lane-end').value,
+            laneMovement: document.getElementById('lane-movement').value, 
+            totalGames: document.getElementById('total-games').value,
+            pointSystem: document.getElementById('point-system').value,
+            teamFinals: document.getElementById('team-finals').value
+        };
+        await saveData(); alert(getTranslation('alert_params_locked'));
+    }
+
+    function buildRosterForms() {
+        const qtyTeams = parseInt(tournamentData.config?.qtyTeams || document.getElementById('qty-teams').value) || 0;
+        const qtyPlayers = parseInt(tournamentData.config?.qtyPlayers || document.getElementById('qty-players').value) || 0;
+        const container = document.getElementById('roster-forms-container');
+        
+        if(qtyTeams === 0 || qtyPlayers === 0) { alert(getTranslation('alert_sys_error')); return; }
+
+        const teamDivs = tournamentData.config?.teamDivisions || [];
+        const bowlerDivs = tournamentData.config?.bowlerDivisions || [];
+
+        let tOptions = `<option value="">-- ${getTranslation('sel_team_div')} --</option>`;
+        teamDivs.forEach(d => tOptions += `<option value="${d}">${d}</option>`);
+
+        let bOptions = `<option value="">-- ${getTranslation('sel_bowler_div')} --</option>`;
+        bowlerDivs.forEach(d => bOptions += `<option value="${d}">${d}</option>`);
+
+        let html = '';
+        for(let t = 1; t <= qtyTeams; t++) {
+            html += `<div class="team-card">
+                        <div class="form-group" style="display:flex; gap:15px; margin-bottom: 25px;">
+                            <input type="text" id="team-${t}-name" placeholder="${getTranslation('placeholder_team')}" style="flex:2;">
+                            ${teamDivs.length > 0 ? `<select id="team-${t}-div" style="flex:1;">${tOptions}</select>` : ''}
+                        </div>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">`;
+            for(let p = 1; p <= qtyPlayers; p++) {
+                html += `<div style="background: rgba(0,0,0,0.2); padding: 10px; border-radius: 6px;">
+                            <label style="font-size: 11px; color: var(--text-muted); display: block; margin-bottom: 5px;">BOWLER 0${p}</label>
+                            <select id="team-${t}-player-${p}" style="margin-bottom: 8px;">${window.TournamentCloud.rosterOptions()}</select>
+                            <div style="display:flex; gap:5px;">
+                                ${bowlerDivs.length > 0 ? `<select id="team-${t}-player-${p}-div" style="flex:2;">${bOptions}</select>` : ''}
+                                <input type="number" id="team-${t}-player-${p}-avg" placeholder="${getTranslation('ph_avg')}" style="flex:1;">
+                            </div>
+                         </div>`;
+            }
+            html += `</div></div>`;
+        }
+        container.innerHTML = html;
+        (tournamentData.teams || []).forEach((team, teamIndex) => {
+            const t = teamIndex + 1;
+            const name = document.getElementById(`team-${t}-name`); if(name) name.value = team.name || '';
+            const division = document.getElementById(`team-${t}-div`); if(division) division.value = team.division || '';
+            (team.players || []).forEach((player, playerIndex) => {
+                const p = playerIndex + 1;
+                const profile = document.getElementById(`team-${t}-player-${p}`); if(profile) profile.value = player.profileId || '';
+                const playerDivision = document.getElementById(`team-${t}-player-${p}-div`); if(playerDivision) playerDivision.value = player.division || '';
+                const average = document.getElementById(`team-${t}-player-${p}-avg`); if(average) average.value = player.avg ?? '';
+            });
+        });
+        document.getElementById('save-roster-btn').classList.remove('hidden');
+    }
+
+    function generateTestData() {
+        const teamNames = ["Neon Strikers", "Alley Kings", "Gutter Punks", "Cyber Rollers", "Split Happens", "Pin Reapers", "Velocity", "Apex Bowling"];
+        const playerNames = ["Alex", "Jordan", "Taylor", "Morgan", "Casey", "Riley", "Jamie", "Oscar", "Luis", "Gomez", "Emma", "Noah"];
+        const qtyTeams = parseInt(tournamentData.config?.qtyTeams) || 0;
+        const qtyPlayers = parseInt(tournamentData.config?.qtyPlayers) || 0;
+        const tDivs = tournamentData.config?.teamDivisions || [];
+        const bDivs = tournamentData.config?.bowlerDivisions || [];
+
+        for(let t = 1; t <= qtyTeams; t++) {
+            document.getElementById(`team-${t}-name`).value = teamNames[Math.floor(Math.random() * teamNames.length)] + " " + t;
+            if(tDivs.length > 0 && document.getElementById(`team-${t}-div`)) {
+                document.getElementById(`team-${t}-div`).value = tDivs[Math.floor(Math.random() * tDivs.length)];
+            }
+            for(let p = 1; p <= qtyPlayers; p++) {
+                document.getElementById(`team-${t}-player-${p}`).value = playerNames[Math.floor(Math.random() * playerNames.length)] + " " + p;
+                document.getElementById(`team-${t}-player-${p}-avg`).value = Math.floor(Math.random() * (220 - 150 + 1)) + 150;
+                if(bDivs.length > 0 && document.getElementById(`team-${t}-player-${p}-div`)) {
+                    document.getElementById(`team-${t}-player-${p}-div`).value = bDivs[Math.floor(Math.random() * bDivs.length)];
+                }
+            }
+        }
+    }
+
+    async function saveRoster() {
+        const qtyTeams = parseInt(tournamentData.config?.qtyTeams) || 0;
+        const qtyPlayers = parseInt(tournamentData.config?.qtyPlayers) || 0;
+        let teams = [];
+        
+        for(let t = 1; t <= qtyTeams; t++) {
+            let teamName = document.getElementById(`team-${t}-name`).value || `Team ${t}`;
+            let tDiv = document.getElementById(`team-${t}-div`)?.value || "";
+            let players = [];
+            for(let p = 1; p <= qtyPlayers; p++) {
+                players.push({
+                    profileId: document.getElementById(`team-${t}-player-${p}`).value,
+                    name: window.TournamentCloud.profileName(document.getElementById(`team-${t}-player-${p}`).value),
+                    division: document.getElementById(`team-${t}-player-${p}-div`)?.value || "",
+                    avg: document.getElementById(`team-${t}-player-${p}-avg`)?.value || ""
+                });
+            }
+            teams.push({ id: t, name: teamName, division: tDiv, players: players });
+        }
+        tournamentData.teams = teams;
+        
+        let matches = [];
+        for(let i = 0; i < teams.length; i += 2) {
+            if(teams[i+1]) matches.push({ id: (i/2)+1, round: 1, teamA: teams[i], teamB: teams[i+1] });
+        }
+        tournamentData.matches = matches;
+        
+        await saveData(); populateMatchDropdown(); alert(getTranslation('alert_roster_committed'));
+    }
+
+    function populateMatchDropdown() {
+        let select = document.getElementById('match-selector');
+        select.innerHTML = `<option value="">${getTranslation('input_awaiting')}</option>`;
+        
+        let totalGames = parseInt(tournamentData.config?.totalGames) || 3;
+        for(let g=1; g<=totalGames; g++) {
+            select.innerHTML += `<option value="${g}">Game ${g}</option>`;
+        }
+        toggleGenerateNextButton();
+    }
+
+    function toggleGenerateNextButton() {
+        let btnNext = document.getElementById('generate-next-btn');
+        let laneMov = tournamentData.config?.laneMovement || 'none';
+        if(laneMov !== 'none' && tournamentData.matches.length > 0) { btnNext.classList.remove('hidden'); } 
+        else { btnNext.classList.add('hidden'); }
+    }
+
+    function renderScoreMatrix() { window.TournamentCloud.renderScores(); }
+
+    function generateNextGameMatches() { window.TournamentCloud.notice('Automatic lane rotation is not implemented in the original app yet.'); }
+
+    function exportData() { window.TournamentCloud.exportSession(); }
+
+    async function importData(event) {
+        const file=event.target.files[0]; if(!file)return;
+        try { await window.TournamentCloud.importLegacy(JSON.parse(await file.text())); }
+        catch(error){window.TournamentCloud.notice(error.message);}
+        event.target.value='';
+    }
+    async function saveData() { return window.TournamentCloud.saveState(tournamentData); }
+window.TournamentManager = {
+        getState:()=>structuredClone(tournamentData),
+        setState(data,manager){
+            tournamentData=data;isAdmin=manager;
+            document.getElementById('admin-nav').classList.toggle('hidden',!manager);
+            const cfg=data.config||{};
+            for(const [id,key] of Object.entries({'qty-teams':'qtyTeams','qty-players':'qtyPlayers','total-games':'totalGames','lane-start':'laneStart','lane-end':'laneEnd','lane-movement':'laneMovement','point-system':'pointSystem','team-finals':'teamFinals'}))if(cfg[key]!=null)document.getElementById(id).value=cfg[key];
+            document.getElementById('qty-team-divs').value=cfg.teamDivisions?.length||0;renderTeamDivisionInputs();
+            (cfg.teamDivisions||[]).forEach((v,i)=>document.getElementById('team-div-name-'+(i+1)).value=v);
+            document.getElementById('qty-bowler-divs').value=cfg.bowlerDivisions?.length||0;renderBowlerDivisionInputs();
+            (cfg.bowlerDivisions||[]).forEach((v,i)=>document.getElementById('bowler-div-name-'+(i+1)).value=v);
+            const rules=cfg.hcRules||{};
+            if((cfg.bowlerDivisions||[]).length){
+                (cfg.bowlerDivisions||[]).forEach((name,i)=>{
+                    const rule=rules[name]||{}; const key=i+1;
+                    for(const field of ['base','perc','min','max']){const el=document.getElementById(`hc-${field}-${key}`);if(el)el.value=rule[field]??'';}
+                });
+            } else {
+                const rule=rules.global||{};
+                for(const field of ['base','perc','min','max']){const el=document.getElementById(`hc-${field}-global`);if(el)el.value=rule[field]??'';}
+            }
+            populateMatchDropdown();showPage('page-results');
+        },
+        showPage
+    };
+</script>
+<script src="portal-config.js?v=20261009-8"></script>
+<script type="module" src="cloud.js?v=20261010-1"></script>
+</body>
+</html>
+
