@@ -140,7 +140,10 @@
  <section id="league-honor-scores" class="league-view hidden"><h3>Honor Scores</h3><div id="honor-scores"></div></section>
  <section id="league-calendar" class="league-view hidden"><div class="panel-heading"><h3>League Calendar</h3><span class="hint">Weekly matchups and lane assignments</span></div><div id="league-calendar-list"></div></section>
  <section id="league-finances" class="league-view hidden"><h3>League Finances</h3><p class="hint">Projected lineage, prize fund, sponsorships, and amounts due from the configured season.</p><div id="league-finance-summary" class="stat-grid"></div></section>
- <section id="league-teams" class="league-view hidden"><div class="panel-heading"><div><h3>Teams & Rosters</h3><p class="hint">Assign each bowler once as active or substitute.</p></div><button id="build-league-teams">Build Team Forms</button></div><form id="league-teams-form"><div id="league-team-editor"></div><button class="primary hidden" id="save-league-teams">Save Teams & Rosters</button></form></section>
+ <section id="league-teams" class="league-view hidden"><div class="panel-heading"><div><h3>Teams & Rosters</h3><p class="hint">Assign each bowler once as active or substitute.</p></div><div class="action-row"><button id="register-new-bowler">Register new bowler</button><button id="build-league-teams">Build Team Forms</button></div></div>
+  <div id="new-bowler-panel" class="new-bowler-panel hidden"><div><h4>Register a new bowler</h4><p class="hint">Enter the bowler's name now. Their verified email and shared player ID will be linked only when they sign in and select their name.</p></div><form id="add-profile" class="new-bowler-form"><label>Bowler name<input name="name" required maxlength="120" autocomplete="off"></label><button class="primary">Create bowler</button><button id="cancel-new-bowler" type="button">Cancel</button></form></div>
+  <form id="league-teams-form"><div id="league-team-editor"></div><button class="primary hidden" id="save-league-teams">Save Teams & Rosters</button></form>
+ </section>
  <section id="league-integrations" class="league-view hidden"><h3>Brackets Integration</h3><p>Use this code in Brackets to connect the same league roster, bowler IDs, handicaps, and bowling session.</p><div class="integration-code" id="integration-code">No connection code yet</div><br><button id="generate-integration-code">Create / Replace League Code</button><p class="hint">Replacing the code prevents new connections using the previous code. Existing score history is retained.</p></section>
  <section id="league-setup" class="league-view hidden"><h3>Configure League</h3><p class="hint">Save the rules first, then generate all league sessions and matches.</p>
   <form id="league-configuration" class="league-form">
@@ -154,9 +157,7 @@
   </form>
  </section>
  <div id="bowler-claim" class="hidden cloud-form"><label>Your bowler profile<select id="claim-profile"></select></label><button id="claim-bowler">Confirm my bowler profile</button></div>
- <div id="session-manager" class="hidden"><details><summary>Add or reschedule one session</summary><form id="create-session" class="cloud-form field-grid"><label>Session label<input name="label" placeholder="Week 1 · Evening" required maxlength="120"></label><label>Date<input name="date" type="date" required></label><button class="primary">Create session</button></form></details>
- <details><summary>Add a bowler to the shared roster</summary><form id="add-profile" class="cloud-form field-grid"><label>Bowler name<input name="name" required maxlength="120"></label><label>Bowler login email<input name="email" type="email" placeholder="For verified account linking"></label><button>Add bowler</button></form></details>
- </div>
+ <div id="session-manager" class="hidden"><details><summary>Add or reschedule one session</summary><form id="create-session" class="cloud-form field-grid"><label>Session label<input name="label" placeholder="Week 1 · Evening" required maxlength="120"></label><label>Date<input name="date" type="date" required></label><button class="primary">Create session</button></form></details></div>
  <p id="session-status" class="hint"></p><div id="season-summary"></div>
 </section>
 <div id="tournament-workspace" class="hidden">
