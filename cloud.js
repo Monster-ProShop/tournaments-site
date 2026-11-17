@@ -180,12 +180,30 @@ function renderStandings(){
   let matches=$('match-results');if(!matches){matches=document.createElement('div');matches.id='match-results';$('page-matches').append(matches);}
   matches.innerHTML=table(['Match','Team A','Team B','Lanes'],session.state.matches.map((m,i)=>[m.id||i+1,m.teamA?.name||m.teamA||`Position ${m.positionA}`,m.teamB?.name||m.teamB||`Position ${m.positionB}`,m.laneStart?`${m.laneStart}-${m.laneEnd}`:'—']));
 }
+function playerSessionHandicap(player,totalGames){
+  const prior=session.priorAverages?.[player.profileId],scores=session.games.filter(g=>g.profile_id===player.profileId),entering=Number(player.avg)>0?Number(player.avg):null;
+  const average=prior?.games?Number(prior.average):entering??(scores.length===totalGames?scores.reduce((sum,g)=>sum+Number(g.scratch),0)/scores.length:null);
+  if(average===null)return null;
+  const rules=session.state.leagueRules?.handicap||leagueConfiguration?.handicap||{},rule=rules.divisions?.[player.division]||rules.global||{};
+  return Math.max(Number(rule.minHandicap??rule.minAverage??0),Math.min(Number(rule.maxHandicap??rule.maxAverage??300),Math.floor((Number(rule.base??220)-average)*Number(rule.percent??90)/100)));
+}
+function scoreSheetTeam(team,lane,totalGames){
+  const players=team.players||[],handicaps=new Map(players.map(player=>[player.profileId,playerSessionHandicap(player,totalGames)]));
+  const rows=players.map(player=>{const hcp=handicaps.get(player.profileId),scores=Array.from({length:totalGames},(_,i)=>session.games.find(g=>g.profile_id===player.profileId&&Number(g.game_number)===i+1));return {player,hcp,scores};});
+  const summary=Array.from({length:totalGames},(_,i)=>{const playing=rows.filter(row=>row.scores[i]),expected=Number(session.state.leagueRules?.activeBowlers||leagueConfiguration?.activeBowlers||0),complete=expected>0&&playing.length===expected&&playing.every(row=>row.hcp!==null),scratch=playing.reduce((sum,row)=>sum+Number(row.scores[i]?.scratch||0),0),handicap=complete?playing.reduce((sum,row)=>sum+row.hcp,0):null;return {complete,scratch,handicap,total:complete?scratch+handicap:null};});
+  const body=rows.map(({player,hcp,scores})=>`<tr><td class="hcp-cell">${hcp===null?'<span class="pending-hcp">Pending</span>':hcp}</td><th>${esc(player.name)}${player.rosterRole==='substitute'?'<small>Substitute</small>':''}</th>${scores.map((score,i)=>{const locked=session.brackets_linked&&score?.source==='brackets';return `<td><input aria-label="${esc(player.name)} game ${i+1}" data-score-profile="${esc(player.profileId)}" data-game="${i+1}" type="number" min="0" max="300" step="1" value="${score?.scratch??''}" placeholder="—" ${locked?'disabled':''}></td>`;}).join('')}<td>${scores.some(Boolean)?scores.reduce((sum,score)=>sum+Number(score?.scratch||0),0):'—'}</td></tr>`).join('');
+  const cells=values=>values.map(value=>`<td>${value??'—'}</td>`).join('');
+  return {summary,html:`<section class="score-sheet-team"><header><div><span>Team</span><strong>${esc(team.name)}</strong></div><div><span>Lane</span><strong>${esc(lane)}</strong></div></header><div class="table-scroll"><table class="paper-score-grid"><thead><tr><th>HCP</th><th>Bowlers</th>${Array.from({length:totalGames},(_,i)=>`<th>Game ${i+1}</th>`).join('')}<th>Total</th></tr></thead><tbody>${body}<tr class="summary-row"><th colspan="2">Scratch subtotal</th>${cells(summary.map(game=>game.complete?game.scratch:null))}<td>${summary.every(g=>g.complete)?summary.reduce((sum,g)=>sum+g.scratch,0):'—'}</td></tr><tr class="summary-row"><th colspan="2">Handicap</th>${cells(summary.map(game=>game.handicap))}<td>${summary.every(g=>g.complete)?summary.reduce((sum,g)=>sum+g.handicap,0):'—'}</td></tr><tr class="summary-row total-row"><th colspan="2">Total with handicap</th>${cells(summary.map(game=>game.total))}<td>${summary.every(g=>g.complete)?summary.reduce((sum,g)=>sum+g.total,0):'—'}</td></tr><tr class="summary-row outcome-row" data-outcomes><th colspan="2">Result</th>${cells(summary.map(()=>''))}<td></td></tr></tbody></table></div></section>`};
+}
 function renderScores(){
-  const game=Number($('match-selector').value);if(!game||!session){$('score-matrix-container').innerHTML='';$('commit-scores-btn').classList.add('hidden');return;}
-  $('score-matrix-container').innerHTML=session.state.teams.map(team=>`<div class="team-card"><h3>${esc(team.name)}</h3><div class="score-fields">${team.players.map(p=>{
-    const score=session.games.find(g=>g.profile_id===p.profileId&&g.game_number===game),locked=session.brackets_linked&&score?.source==='brackets';
-    return `<label>${esc(p.name)}${locked?' <small>· Brackets</small>':''}<input data-score-profile="${esc(p.profileId)}" data-game="${game}" type="number" min="0" max="300" step="1" value="${score?.scratch??''}" placeholder="Not bowled" ${locked?'disabled':''}></label>`;
-  }).join('')}</div></div>`).join('');
+  const selected=$('match-selector').value;if(!selected||!session){$('score-matrix-container').innerHTML='';$('commit-scores-btn').classList.add('hidden');return;}
+  const match=(session.state.matches||[]).find((item,index)=>String(item.id??index+1)===selected),teamA=match?.teamA,teamB=match?.teamB;
+  if(!teamA?.players||!teamB?.players){$('score-matrix-container').innerHTML='<div class="standings-placeholder">Position-round teams will appear after the preceding standings are complete.</div>';$('commit-scores-btn').classList.add('hidden');return;}
+  const totalGames=Number(session.state.config?.totalGames||leagueConfiguration?.gamesPerBowler||3),a=scoreSheetTeam(teamA,match.laneStart,totalGames),b=scoreSheetTeam(teamB,match.laneEnd,totalGames);
+  $('score-matrix-container').innerHTML=`<div class="score-sheet-heading"><div><span>League</span><strong>${esc(competition.name)}</strong></div><div><span>Session</span><strong>${esc(session.label)}</strong></div><div><span>Date</span><strong>${esc(String(session.session_date).slice(0,10))}</strong></div></div><div class="league-score-sheet">${a.html}${b.html}</div>`;
+  const outcome=(mine,other)=>!mine.complete||!other.complete?'':mine.total>other.total?'<span class="win-mark" title="Won">✓</span>':mine.total<other.total?'<span class="loss-mark" title="Lost">✕</span>':'<span class="tie-mark" title="Tie">—</span>';
+  const series=side=>side.summary.every(g=>g.complete)?side.summary.reduce((sum,g)=>sum+g.total,0):null;
+  document.querySelectorAll('[data-outcomes]').forEach((row,index)=>{const mine=index?a:b,other=index?b:a,cells=row.querySelectorAll('td');mine.summary.forEach((game,i)=>cells[i].innerHTML=outcome(game,other.summary[i]));const mineSeries=series(mine),otherSeries=series(other);cells[cells.length-1].innerHTML=mineSeries===null||otherSeries===null?'':outcome({complete:true,total:mineSeries},{complete:true,total:otherSeries});});
   $('commit-scores-btn').classList.toggle('hidden',!manager());
 }
 async function saveState(state){

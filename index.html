@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <script src="league-i18n.js?v=20261117-1"></script>
+    <script src="league-i18n.js?v=20261117-2"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tournaments by ProDrillOS</title>
@@ -94,7 +94,7 @@
         ::-webkit-scrollbar-thumb { background: var(--gold-dim); border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: var(--gold); }
     </style>
-    <link rel="stylesheet" href="brand.css?v=20261107-3">
+    <link rel="stylesheet" href="brand.css?v=20261117-2">
 </head>
 <body>
 
@@ -279,14 +279,14 @@
 <div id="page-admin-matches" class="container hidden">
     <h3 data-i18n="input_title">Score entry</h3>
     <div class="dropdown-match">
-        <label style="color: var(--gold-light); display: block; margin-bottom: 8px; font-weight: 600; font-size: 13px; text-transform: uppercase;" data-i18n="input_target">Select Target Game:</label>
+        <label style="color: var(--gold-light); display: block; margin-bottom: 8px; font-weight: 600; font-size: 13px; text-transform: uppercase;">Select lane pair and match:</label>
         <select id="match-selector" onchange="renderScoreMatrix()">
             <option value="" data-i18n="input_awaiting">-- Awaiting Match Generation --</option>
         </select>
     </div>
     
     <div id="score-matrix-container">
-        <p style="color: var(--text-muted);" data-i18n="input_desc">Score entry matrix will render here once a game is selected.</p>
+        <p style="color: var(--text-muted);">The two-team score sheet will appear after a lane pair is selected.</p>
     </div>
     
     <div style="display: flex; gap: 10px; margin-top: 20px;">
@@ -634,11 +634,11 @@
     function populateMatchDropdown() {
         let select = document.getElementById('match-selector');
         select.innerHTML = `<option value="">${getTranslation('input_awaiting')}</option>`;
-        
-        let totalGames = parseInt(tournamentData.config?.totalGames) || 3;
-        for(let g=1; g<=totalGames; g++) {
-            select.innerHTML += `<option value="${g}">Game ${g}</option>`;
-        }
+        (tournamentData.matches||[]).forEach((match,index)=>{
+            const a=match.teamA?.name||`Position ${match.positionA||'pending'}`,b=match.teamB?.name||`Position ${match.positionB||'pending'}`;
+            const lanes=match.laneStart?`${match.laneStart} / ${match.laneEnd}`:`Match ${index+1}`;
+            select.innerHTML += `<option value="${match.id??index+1}">Lanes ${lanes} · ${a} vs ${b}</option>`;
+        });
         toggleGenerateNextButton();
     }
 
@@ -689,7 +689,7 @@ window.TournamentManager = {
     };
 </script>
 <script src="portal-config.js?v=20261009-8"></script>
-<script type="module" src="cloud.js?v=20261117-1"></script>
+<script type="module" src="cloud.js?v=20261117-2"></script>
 </body>
 </html>
 
