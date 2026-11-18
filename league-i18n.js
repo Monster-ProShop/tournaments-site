@@ -52,7 +52,7 @@
     'Session type':'Tipo de jornada','Regular':'Regular','Position round':'Ronda de posición','Matchups can be edited inside this session.':'Los enfrentamientos se pueden editar dentro de esta jornada.',
     'Save the league setup to generate the complete calendar.':'Guarda la configuración de la liga para generar el calendario completo.',
     'Select lane pair and match:':'Selecciona el par de pistas y el enfrentamiento:','The two-team score sheet will appear after a lane pair is selected.':'La hoja de anotación de ambos equipos aparecerá al seleccionar un par de pistas.',
-    'League':'Liga','Session':'Jornada','Lane':'Pista','Bowlers':'Jugadores','Scratch subtotal':'Subtotal sin hándicap','Handicap':'Hándicap','Total with handicap':'Total con hándicap','Result':'Resultado','Pending':'Pendiente','Substitute':'Suplente','Won':'Ganado','Lost':'Perdido','Tie':'Empate'
+    'League':'Liga','Session':'Jornada','Lane':'Pista','Bowlers':'Jugadores','Scratch subtotal':'Subtotal sin hándicap','Handicap':'Hándicap','Total with handicap':'Total con hándicap','Result':'Resultado','Pending':'Pendiente','Substitute':'Suplente','Won':'Ganado','Lost':'Perdido','Tie':'Empate','WIN':'GANÓ','LOSS':'PERDIÓ','TIE':'EMPATE','Series + HCP':'Serie + HCP','Team handicap':'Hándicap del equipo','Team total + HCP':'Total del equipo + HCP','Result / points':'Resultado / puntos','Match points':'Puntos del enfrentamiento'
   });
   let language='en';try{language=localStorage.getItem('prodrillos-language')==='es'?'es':'en';}catch{}
   const patterns=[
@@ -62,7 +62,8 @@
     [/^(\d+) games · (\d+) pins · (\d+) sessions$/,m=>`${m[1]} juegos · ${m[2]} pinos · ${m[3]} jornadas`],
     [/^(.+) · Saved revision (\d+)$/,m=>`${t(m[1])} · Versión guardada ${m[2]}`],
     [/^Linked scores updated from Brackets · revision (\d+)$/,m=>`Resultados vinculados actualizados desde Brackets · versión ${m[1]}`],
-    [/^Lanes (.+)$/,m=>`Pistas ${m[1].replace(' vs ',' vs. ')}`],[/^Game (\d+)$/,m=>`Juego ${m[1]}`],
+    [/^Lanes (.+)$/,m=>`Pistas ${m[1].replace(' vs ',' vs. ')}`],[/^Game (\d+)$/,m=>`Juego ${m[1]}`],[/^Game (\d+) \+ HCP$/,m=>`Juego ${m[1]} + HCP`],
+    [/^Pending (\d+)\/(\d+)$/,m=>`Pendiente ${m[1]}/${m[2]}`],[/^\+(\d+(?:\.\d+)?) pts?$/,m=>`+${m[1]} ${Number(m[1])===1?'pto':'ptos'}`],
   ];
   function t(value){if(language!=='es')return value;const text=String(value??'');if(es[text])return es[text];for(const [re,fn] of patterns){const match=text.match(re);if(match)return fn(match);}if(text.includes(' · '))return text.split(' · ').map(t).join(' · ');return text;}
   const original=new WeakMap(),attributes=new WeakMap();
