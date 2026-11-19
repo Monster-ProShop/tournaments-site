@@ -138,7 +138,7 @@ function renderPositionRounds(rounds=[]){$('position-round-list').innerHTML=(rou
 function leagueFormConfig(){const f=new FormData($('league-configuration')),n=name=>Number(f.get(name)),divisionNames=splitNames(f.get('bowlerDivisions')),divisionRules={};for(const name of divisionNames){const key=btoa(unescape(encodeURIComponent(name))).replace(/=|\+|\//g,'');divisionRules[name]={percent:Number(f.get(`division-${key}-percent`)),base:Number(f.get(`division-${key}-base`)),minHandicap:Number(f.get(`division-${key}-min`)),maxHandicap:Number(f.get(`division-${key}-max`))};}return {
  blind:{mode:f.get('blindMode'),amount:n('blindAmount')},
  numberOfTeams:n('numberOfTeams'),bowlersPerTeam:n('bowlersPerTeam'),activeBowlers:n('activeBowlers'),substituteBowlers:n('substituteBowlers'),numberOfSessions:n('numberOfSessions'),gamesPerBowler:n('gamesPerBowler'),startDate:f.get('startDate'),startLane:n('startLane'),positionRounds:positionRoundsFromForm(),teamDivisions:splitNames(f.get('teamDivisions')),bowlerDivisions:splitNames(f.get('bowlerDivisions')),
- points:{gameWin:n('gameWin'),gameTie:n('gameTie'),seriesWin:n('seriesWin'),seriesTie:n('seriesTie'),bonuses:bonuses(f.get('bonuses'))},handicap:{global:{percent:n('handicapPercent'),base:n('handicapBase'),minHandicap:n('minimumHandicap'),maxHandicap:n('maximumHandicap')},divisions:divisionRules},finances:{costPerGame:n('costPerGame'),prizeFundPerSession:n('prizeFundPerSession')},
+ points:{gameWin:n('gameWin'),gameTie:n('gameTie'),seriesWin:n('seriesWin'),seriesTie:n('seriesTie'),bonuses:bonuses(f.get('bonuses'))},handicap:{global:{percent:n('handicapPercent'),base:n('handicapBase'),minHandicap:n('minimumHandicap'),maxHandicap:n('maximumHandicap')},divisions:divisionRules,enteringAverageGames:n('enteringAverageGames')},finances:{costPerGame:n('costPerGame'),prizeFundPerSession:n('prizeFundPerSession')},
  sponsorships:[...document.querySelectorAll('[data-sponsor-profile]')].map(input=>({profileId:input.dataset.sponsorProfile,amountPerSession:Number(input.value||0)})).filter(s=>s.amountPerSession>0)};}
 function renderBlindRule(){
   const {blindMode,blindAmount}=$('league-configuration').elements;
@@ -173,6 +173,7 @@ async function encodeLeagueLogo(file){
 function fillLeagueForm(config){const form=$('league-configuration'),set=(name,value)=>{if(form.elements[name])form.elements[name].value=value??'';};
  removeLeagueLogo=false;$('league-logo-file').value='';renderLeagueLogo(config?.leagueLogo);
  set('blindMode',config?.blind?.mode||'disabled');set('blindAmount',config?.blind?.amount??0);renderBlindRule();
+ set('enteringAverageGames',config?.handicap?.enteringAverageGames??0);
  const defaults=config||{numberOfTeams:8,bowlersPerTeam:6,activeBowlers:4,substituteBowlers:2,numberOfSessions:36,gamesPerBowler:3,startLane:1,startDate:new Date().toISOString().slice(0,10),positionRounds:[12,24,36],points:{gameWin:1,gameTie:.5,seriesWin:1,seriesTie:.5,bonuses:[]},handicap:{global:{percent:90,base:220,minHandicap:0,maxHandicap:300}},finances:{costPerGame:0,prizeFundPerSession:0}};
  for(const key of ['numberOfTeams','bowlersPerTeam','activeBowlers','substituteBowlers','numberOfSessions','gamesPerBowler','startDate','startLane'])set(key,defaults[key]??(key==='bowlersPerTeam'?(Number(defaults.activeBowlers||0)+Number(defaults.substituteBowlers||0)):''));renderPositionRounds(defaults.positionRounds||[]);set('teamDivisions',(defaults.teamDivisions||[]).join(', '));set('bowlerDivisions',(defaults.bowlerDivisions||[]).join(', '));
  const rule=defaults.handicap?.global||{};for(const key of ['gameWin','gameTie','seriesWin','seriesTie'])set(key,defaults.points?.[key]);set('bonuses',(defaults.points?.bonuses||[]).map(b=>`${b.concept} | ${b.points}`).join('\n'));set('handicapPercent',rule.percent);set('handicapBase',rule.base);set('minimumHandicap',rule.minHandicap??rule.minAverage??0);set('maximumHandicap',rule.maxHandicap??rule.maxAverage??300);set('costPerGame',defaults.finances?.costPerGame);set('prizeFundPerSession',defaults.finances?.prizeFundPerSession);
@@ -222,10 +223,11 @@ function renderStandings(){
     byBowler.get(game.profile_id).set(Number(game.game_number),game);
   }
   const rows=session.state.teams.flatMap(team=>team.players.filter(player=>byBowler.has(player.profileId)).map(player=>{
-    const games=byBowler.get(player.profileId),hcp=playerSessionHandicap(player,totalGames);
+    const games=byBowler.get(player.profileId);
     const played=[...games.values()].filter(game=>!game.is_blind);
     const scratch=played.reduce((total,game)=>total+Number(game.scratch),0);
-    const series=played.length===totalGames&&hcp!==null?scratch+hcp*totalGames:'—';
+    const handicaps=played.map(game=>playerSessionHandicap(player,game.game_number));
+    const series=played.length===totalGames&&handicaps.every(hcp=>hcp!==null)?scratch+handicaps.reduce((a,b)=>a+b,0):'—';
     return [player.name,team.name,...gameColumns.map(n=>{
       const game=games.get(n);
       return game?.is_blind?`B (${game.scratch})`:game?.scratch??'—';
@@ -235,22 +237,22 @@ function renderStandings(){
   let matches=$('match-results');if(!matches){matches=document.createElement('div');matches.id='match-results';$('page-matches').append(matches);}
   matches.innerHTML=renderMatchResults();
 }
-function playerSessionHandicap(player,totalGames){
-  const prior=session.priorAverages?.[player.profileId],games=session.games.filter(g=>g.profile_id===player.profileId),scores=games.filter(g=>!g.is_blind),entering=Number(player.avg)>0?Number(player.avg):null;
-  const average=prior?.games?Number(prior.average):entering??(games.length===totalGames&&scores.length?scores.reduce((sum,g)=>sum+Number(g.scratch),0)/scores.length:null);
-  if(average===null)return null;
-  const rules=session.state.leagueRules?.handicap||leagueConfiguration?.handicap||{},rule=rules.divisions?.[player.division]||rules.global||{};
-  return Math.max(Number(rule.minHandicap??rule.minAverage??0),Math.min(Number(rule.maxHandicap??rule.maxAverage??300),Math.floor((Number(rule.base??220)-average)*Number(rule.percent??90)/100)));
+function playerSessionHandicap(player,gameNumber){
+  const handicaps=session.sessionHandicaps?.[player.profileId];
+  return handicaps?.byGame?.[gameNumber]??handicaps?.opening??null;
 }
 function teamMatchSummary(team,totalGames){
-  const players=team.players||[],handicaps=new Map(players.map(player=>[player.profileId,playerSessionHandicap(player,totalGames)]));
-  const rows=players.map(player=>{const hcp=handicaps.get(player.profileId),scores=Array.from({length:totalGames},(_,i)=>session.games.find(g=>g.profile_id===player.profileId&&Number(g.game_number)===i+1));return {player,hcp,scores};});
+  const rows=(team.players||[]).map(player=>({
+    player,hcp:playerSessionHandicap(player),
+    scores:Array.from({length:totalGames},(_,i)=>session.games.find(g=>g.profile_id===player.profileId&&Number(g.game_number)===i+1)),
+    handicaps:Array.from({length:totalGames},(_,i)=>playerSessionHandicap(player,i+1))
+  }));
   const expected=Number(session.state.leagueRules?.activeBowlers||leagueConfiguration?.activeBowlers||0);
   const summary=Array.from({length:totalGames},(_,i)=>{
     const playing=rows.filter(row=>row.scores[i]);
-    const complete=expected>0&&playing.length===expected&&playing.every(row=>row.scores[i].is_blind||row.hcp!==null);
+    const complete=expected>0&&playing.length===expected&&playing.every(row=>row.scores[i].is_blind||row.handicaps[i]!==null);
     const scratch=playing.reduce((sum,row)=>sum+Number(row.scores[i].scratch),0);
-    const handicap=complete?playing.reduce((sum,row)=>sum+(row.scores[i].is_blind?0:row.hcp),0):null;
+    const handicap=complete?playing.reduce((sum,row)=>sum+(row.scores[i].is_blind?0:row.handicaps[i]),0):null;
     return {complete,entered:playing.length,expected,scratch,handicap,total:complete?scratch+handicap:null};
   });
   return {rows,summary};
@@ -260,9 +262,11 @@ function resultBadge(result){return `<span class="result-badge ${result.kind}">$
 function seriesSummary(side){return side.summary.every(game=>game.complete)?{complete:true,total:side.summary.reduce((sum,game)=>sum+game.total,0),entered:side.summary.reduce((sum,game)=>sum+game.entered,0),expected:side.summary.reduce((sum,game)=>sum+game.expected,0)}:{complete:false,total:null,entered:side.summary.reduce((sum,game)=>sum+game.entered,0),expected:side.summary.reduce((sum,game)=>sum+game.expected,0)};}
 function scoreSheetTeam(team,lane,totalGames){
   const side=teamMatchSummary(team,totalGames),{rows,summary}=side;
-  const body=rows.map(({player,hcp,scores})=>{
+  const body=rows.map(({player,hcp,scores,handicaps})=>{
     const complete=scores.every(score=>score&&!score.is_blind)&&hcp!==null;
-    const seriesHcp=complete?scores.reduce((sum,score)=>sum+Number(score.scratch),0)+hcp*totalGames:null;
+    const seriesHcp=complete?scores.reduce((sum,score,i)=>sum+Number(score.scratch)+handicaps[i],0):null;
+    const playedHandicaps=scores.flatMap((score,i)=>score&&!score.is_blind?[handicaps[i]]:[]);
+    const handicapLabel=new Set(playedHandicaps).size>1?playedHandicaps.join(' / '):playedHandicaps[0]??hcp;
     const cells=scores.map((score,i)=>{
       const locked=session.brackets_linked&&score?.source==='brackets';
       const acceptsBlind=session.blindRule?.mode&&session.blindRule.mode!=='disabled'||score?.is_blind;
@@ -270,7 +274,7 @@ function scoreSheetTeam(team,lane,totalGames){
       const value=score?.is_blind?'B':score?.scratch??'';
       return `<td><input aria-label="${esc(player.name)} game ${i+1}" data-score-profile="${esc(player.profileId)}" data-game="${i+1}" ${inputType} value="${esc(value)}" placeholder="—" ${locked?'disabled':''}>${score?.is_blind?`<small class="blind-pins">${esc(score.scratch)}</small>`:''}</td>`;
     });
-    return `<tr><td class="hcp-cell">${hcp===null?'<span class="pending-hcp">Pending</span>':hcp}</td><th>${esc(player.name)}${player.rosterRole==='substitute'?'<small>Substitute</small>':''}</th>${cells.join('')}<td class="series-hcp">${seriesHcp??'—'}</td></tr>`;
+    return `<tr><td class="hcp-cell">${handicapLabel===null?'<span class="pending-hcp">Pending</span>':handicapLabel}</td><th>${esc(player.name)}${player.rosterRole==='substitute'?'<small>Substitute</small>':''}</th>${cells.join('')}<td class="series-hcp">${seriesHcp??'—'}</td></tr>`;
   }).join('');
   const cells=values=>values.map(value=>`<td>${value??'—'}</td>`).join('');
   return {...side,html:`<section class="score-sheet-team"><header><div><span>Team</span><strong>${esc(team.name)}</strong></div><div><span>Lane</span><strong>${esc(lane)}</strong></div></header><div class="table-scroll"><table class="paper-score-grid"><thead><tr><th>HCP</th><th>Bowlers</th>${Array.from({length:totalGames},(_,i)=>`<th>Game ${i+1}</th>`).join('')}<th>Series + HCP</th></tr></thead><tbody>${body}<tr class="summary-row"><th colspan="2">Scratch subtotal</th>${cells(summary.map(game=>game.complete?game.scratch:null))}<td>${summary.every(g=>g.complete)?summary.reduce((sum,g)=>sum+g.scratch,0):'—'}</td></tr><tr class="summary-row"><th colspan="2">Team handicap</th>${cells(summary.map(game=>game.handicap))}<td>${summary.every(g=>g.complete)?summary.reduce((sum,g)=>sum+g.handicap,0):'—'}</td></tr><tr class="summary-row total-row"><th colspan="2">Team total + HCP</th>${cells(summary.map(game=>game.total))}<td>${seriesSummary(side).total??'—'}</td></tr><tr class="summary-row outcome-row" data-outcomes><th colspan="2">Result / points</th>${cells(summary.map(()=>''))}<td></td></tr></tbody></table></div></section>`};

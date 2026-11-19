@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <script src="league-i18n.js?v=20261119-logo"></script>
+    <script src="league-i18n.js?v=20261119-handicap-hold"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tournaments by ProDrillOS</title>
@@ -162,7 +162,7 @@
     <p class="hint">Enter B or b in Score Entry. Blind pins count only for the team and carry no additional handicap.</p>
    </details>
    <fieldset><legend>Standard league points</legend><div class="field-grid"><label>Points per team game won<input name="gameWin" type="number" min="0" step="0.5" required></label><label>Points per team game tie<input name="gameTie" type="number" min="0" step="0.5" required></label><label>Points per team series won<input name="seriesWin" type="number" min="0" step="0.5" required></label><label>Points per team series tie<input name="seriesTie" type="number" min="0" step="0.5" required></label></div><label>Bonus points, one per line <span class="hint">Concept | Points</span><textarea name="bonuses" rows="3" placeholder="Perfect game | 1"></textarea></label></fieldset>
-   <details class="setup-disclosure"><summary>Handicap rules</summary><div class="field-grid"><label>Handicap percent<input name="handicapPercent" type="number" min="0" max="100" required></label><label>Based on average<input name="handicapBase" type="number" min="0" max="300" required></label><label>Minimum handicap<input name="minimumHandicap" type="number" min="0" max="300" required></label><label>Maximum handicap<input name="maximumHandicap" type="number" min="0" max="300" required></label></div><div id="division-handicap-rules"></div></details>
+   <details class="setup-disclosure"><summary>Handicap rules</summary><div class="field-grid"><label>Handicap percent<input name="handicapPercent" type="number" min="0" max="100" required></label><label>Based on average<input name="handicapBase" type="number" min="0" max="300" required></label><label>Minimum handicap<input name="minimumHandicap" type="number" min="0" max="300" required></label><label>Maximum handicap<input name="maximumHandicap" type="number" min="0" max="300" required></label></div><label>Entering average hold (games)<input name="enteringAverageGames" type="number" min="0" max="720" step="1" required><span class="hint">Use the entering average for this many games actually bowled. Blind and missed games do not count. Enter 0 to switch after the first scored session.</span></label><div id="division-handicap-rules"></div></details>
    <fieldset><legend>League finances</legend><div class="field-grid"><label>Cost per game<input name="costPerGame" type="number" min="0" step="0.01" required></label><label>Prize fund per bowler / session<input name="prizeFundPerSession" type="number" min="0" step="0.01" required></label></div><details class="setup-disclosure"><summary>Bowling-center sponsorships</summary><p class="hint">Enter the amount per session that the center covers. Bowlers are listed alphabetically.</p><div id="sponsorship-list"></div></details></fieldset>
    <div class="action-row"><button class="primary" type="submit">Save League Configuration</button><button id="generate-league-schedule" type="button">Regenerate Calendar</button></div>
   </form>
@@ -696,7 +696,7 @@ window.TournamentManager = {
     };
 </script>
 <script src="portal-config.js?v=20261009-8"></script>
-<script type="module" src="cloud.js?v=20261119-logo"></script>
+<script type="module" src="cloud.js?v=20261119-handicap-hold"></script>
 </body>
 </html>
 

@@ -55,6 +55,8 @@
     'League':'Liga','Session':'Jornada','Lane':'Pista','Bowlers':'Jugadores','Scratch subtotal':'Subtotal sin hándicap','Handicap':'Hándicap','Total with handicap':'Total con hándicap','Result':'Resultado','Pending':'Pendiente','Substitute':'Suplente','Won':'Ganado','Lost':'Perdido','Tie':'Empate','WIN':'GANÓ','LOSS':'PERDIÓ','TIE':'EMPATE','Series + HCP':'Serie + HCP','Team handicap':'Hándicap del equipo','Team total + HCP':'Total del equipo + HCP','Result / points':'Resultado / puntos','Match points':'Puntos del enfrentamiento'
   });
   let language='en';try{language=localStorage.getItem('prodrillos-language')==='es'?'es':'en';}catch{}
+  Object.assign(es,{'Entering average hold (games)':'Juegos con promedio de ingreso',
+    'Use the entering average for this many games actually bowled. Blind and missed games do not count. Enter 0 to switch after the first scored session.':'Usa el promedio de ingreso para esta cantidad de juegos efectivamente jugados. Los juegos por ausencia o no jugados no cuentan. Captura 0 para cambiar después de la primera jornada con resultados.'});
   Object.assign(es,{'Session Scores':'Resultados de la jornada','League logo':'Logo de la liga','Upload logo':'Subir logo','Remove logo':'Quitar logo',
     'Optional. The logo appears on standings and weekly results PDFs.':'Opcional. El logo aparece en los PDF de posiciones y resultados semanales.',
     'Choose a PNG, JPEG, or WebP logo up to 5 MB.':'Selecciona un logo PNG, JPEG o WebP de hasta 5 MB.',
