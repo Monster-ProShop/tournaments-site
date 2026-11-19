@@ -96,7 +96,8 @@ async function openCompetition(row){
   competition=row;session=null;dirty=false;
   $('competition-panel').classList.add('hidden');$('session-panel').classList.remove('hidden');$('tournament-workspace').classList.add('hidden');
   $('competition-name').textContent=row.name;$('competition-location').textContent=[row.bowling_center,row.city,row.region,row.country].filter(Boolean).join(' · ');
-  $('session-manager').classList.toggle('hidden',!manager());
+  $('weekly-admin-overview').classList.toggle('hidden',!manager());
+  showLeagueView('league-home');
   $('league-export-actions').classList.toggle('hidden',!manager());
   await loadRoster();await loadConfiguration();await loadTeams();await listSessions();await loadSummary();await loadFinances();
   const requested=new URLSearchParams(location.search).get('session');
@@ -158,17 +159,20 @@ function renderTeamSelector(){if(!leagueConfiguration)return;const select=$('tea
 function renderTeamEditor(number=currentTeamNumber){if(!leagueConfiguration)throw Error('Save the league configuration first.');currentTeamNumber=Number(number)||1;const teamDivs=leagueConfiguration.teamDivisions||[],bowlerDivs=leagueConfiguration.bowlerDivisions||[],slots=leagueConfiguration.bowlersPerTeam||leagueConfiguration.activeBowlers+leagueConfiguration.substituteBowlers,saved=teamDrafts.get(currentTeamNumber)||leagueTeams.find(t=>Number(t.team_number)===currentTeamNumber)||{name:`Team ${currentTeamNumber}`,players:[]};
  $('league-team-editor').innerHTML=`<article class="team-roster-card" data-team-number="${currentTeamNumber}"><h4>Team ${currentTeamNumber}</h4><div class="field-grid"><label>Team name<input data-team-name value="${esc(saved.name||'')}"></label><label>Team division<select data-team-division><option value="">No division</option>${teamDivs.map(d=>`<option ${saved.division===d?'selected':''}>${esc(d)}</option>`).join('')}</select></label></div>${Array.from({length:slots},(_,j)=>{const p=saved.players?.[j]||{},defaultRole=j<leagueConfiguration.activeBowlers?'active':'substitute';return `<div class="roster-slot"><div class="player-picker"><label>Bowler ${j+1}<select data-player>${rosterSelect(p.profileId)}</select></label><button type="button" data-edit-bowler>Edit name</button><button type="button" data-register-for-slot>New bowler</button></div><label>Role<select data-roster-role><option value="active" ${(p.rosterRole||defaultRole)==='active'?'selected':''}>Active</option><option value="substitute" ${(p.rosterRole||defaultRole)==='substitute'?'selected':''}>Substitute</option></select></label><label>Entering avg<input data-entering-average type="number" min="0" max="300" value="${esc(p.avg||'')}"></label><label>Bowler division<select data-bowler-division><option value="">No division</option>${bowlerDivs.map(d=>`<option ${p.division===d?'selected':''}>${esc(d)}</option>`).join('')}</select></label></div>`;}).join('')}</article>`;$('save-league-teams').classList.remove('hidden');$('team-save-status').textContent=teamDrafts.has(currentTeamNumber)?t('Unsaved changes for this team.'):(leagueTeams.some(t=>Number(t.team_number)===currentTeamNumber)?t('This team has been saved.'):'');}
 function renderCalendar(){$('league-calendar-list').innerHTML=sessionRows.length?sessionRows.map(s=>{const type=s.session_type||(s.position_round?'position':'regular');return `<article class="calendar-card ${type==='position'?'position':''}"><div><label>Date<input type="date" data-session-date="${esc(s.id)}" value="${esc(String(s.session_date).slice(0,10))}" ${manager()?'':'disabled'}></label><span class="hint">Week ${esc(s.week_number||'—')}</span></div><div><strong>${esc(s.label)}</strong><label>Session type<select data-session-type="${esc(s.id)}" ${manager()?'':'disabled'}><option value="regular" ${type==='regular'?'selected':''}>Regular</option><option value="position" ${type==='position'?'selected':''}>Position round</option><option value="manual" ${type==='manual'?'selected':''}>Manual</option></select></label><p class="hint">${type==='position'?'Matchups follow the current standings.':type==='manual'?'Matchups can be edited inside this session.':'USBC rotation and assigned lane pair.'}</p><button data-calendar-session="${esc(s.id)}">Open session</button></div></article>`;}).join(''):'<div class="standings-placeholder">Save the league setup to generate the complete calendar.</div>';
- document.querySelectorAll('[data-calendar-session]').forEach(b=>b.onclick=run(()=>openSession(b.dataset.calendarSession)));}
+ document.querySelectorAll('[data-calendar-session]').forEach(b=>{
+   b.classList.toggle('hidden',!manager());
+   b.onclick=run(async()=>{if(await openSession(b.dataset.calendarSession))showLeagueView('league-home');});
+ });}
 function renderLeagueStats(){$('league-stat-grid').innerHTML=[['Teams',leagueConfiguration?.numberOfTeams||'—'],['Sessions',sessionRows.length||leagueConfiguration?.numberOfSessions||'—'],['Games / bowler',leagueConfiguration?.gamesPerBowler||'—'],['Position rounds',leagueConfiguration?.positionRounds?.length||0]].map(([label,value])=>`<div class="stat-card"><span class="hint">${label}</span><strong>${value}</strong></div>`).join('');}
 function table(head,rows){return '<div class="table-scroll"><table class="score-grid"><thead><tr>'+head.map(h=>'<th>'+esc(t(h))+'</th>').join('')+'</tr></thead><tbody>'+rows.map(row=>'<tr>'+row.map(v=>'<td translate="no">'+esc(v)+'</td>').join('')+'</tr>').join('')+'</tbody></table></div>';}
 async function openSession(id){
   if(!canLeave()){$('session-select').value=session?.id||'';return;}
   session=await api('/league/session'+query()+'&session_id='+encodeURIComponent(id));dirty=false;
-  $('session-select').value=id;$('tournament-workspace').classList.remove('hidden');
+  $('session-select').value=id;syncWeeklyWorkspace();
   window.TournamentManager.setState(session.state,manager());
   const url=new URL(location.href);url.searchParams.set('competition',competition.id);url.searchParams.set('session',id);history.replaceState(null,'',url);
   $('session-status').textContent=`${session.label} · ${String(session.session_date).slice(0,10)} · ${session.brackets_linked?'Linked bracket scores sync automatically.':'Cloud session'} · Saved revision ${session.revision}`;
-  renderStandings();notice('Session loaded from the cloud.');
+  renderStandings();notice('Session loaded from the cloud.');return true;
 }
 function renderStandings(){
   const totals=new Map();
@@ -206,7 +210,7 @@ function scoreSheetTeam(team,lane,totalGames){
 function renderMatchResults(){const totalGames=Number(session.state.config?.totalGames||leagueConfiguration?.gamesPerBowler||3);return (session.state.matches||[]).map(match=>{if(!match.teamA?.players||!match.teamB?.players)return `<article class="match-result-card"><h4>Lanes ${esc(match.laneStart||'—')} / ${esc(match.laneEnd||'—')} · Position round pending</h4></article>`;const a=teamMatchSummary(match.teamA,totalGames),b=teamMatchSummary(match.teamB,totalGames),as=seriesSummary(a),bs=seriesSummary(b),ar=a.summary.map((g,i)=>resultFor(g,b.summary[i])),br=b.summary.map((g,i)=>resultFor(g,a.summary[i])),ars=resultFor(as,bs,'series'),brs=resultFor(bs,as,'series'),ap=[...ar,ars].reduce((s,r)=>s+Number(r.points||0),teamBonusPoints(match.teamA)),bp=[...br,brs].reduce((s,r)=>s+Number(r.points||0),teamBonusPoints(match.teamB));return `<article class="match-result-card"><header><strong>Lanes ${esc(match.laneStart)} / ${esc(match.laneEnd)}</strong><span>${esc(match.teamA.name)} vs ${esc(match.teamB.name)}</span></header><div class="table-scroll"><table class="match-result-grid"><thead><tr><th>Team</th>${Array.from({length:totalGames},(_,i)=>`<th>Game ${i+1} + HCP</th>`).join('')}<th>Series + HCP</th><th>Match points</th></tr></thead><tbody><tr><th>${esc(match.teamA.name)}</th>${a.summary.map((g,i)=>`<td><strong>${g.total??'—'}</strong>${resultBadge(ar[i])}</td>`).join('')}<td><strong>${as.total??'—'}</strong>${resultBadge(ars)}</td><td class="match-points">${ap}</td></tr><tr><th>${esc(match.teamB.name)}</th>${b.summary.map((g,i)=>`<td><strong>${g.total??'—'}</strong>${resultBadge(br[i])}</td>`).join('')}<td><strong>${bs.total??'—'}</strong>${resultBadge(brs)}</td><td class="match-points">${bp}</td></tr></tbody></table></div></article>`;}).join('');}
 function configuredBonuses(){
   const points=session.state.leagueRules?.points||leagueConfiguration?.points;
-  return new Map((points?.bonuses||[]).map(({concept,points})=>[concept,Number(points)]));
+  return new Map((session.bonusRules||points?.bonuses||[]).map(({concept,points})=>[concept,Number(points)]));
 }
 function teamBonusPoints(team){
   const awarded=new Set((session.state.teamBonuses?.[team.id]||[]).filter(decision=>decision.awarded).map(decision=>decision.concept));
@@ -219,6 +223,7 @@ function bonusFields(team){
   const label=concept=>{
     if(/^(asistencia|attendance|assistance?|assitance)$/i.test(concept))return 'Attendance';
     if(/^(uniforme|uniform)$/i.test(concept))return 'Uniform';
+    if(/^pago$/i.test(concept))return 'Paid on time';
     return concept;
   };
   const fields=[...bonuses].map(([concept,points])=>`<label><input type="checkbox" data-bonus-concept="${esc(concept)}" ${saved.get(concept)?'checked':''} ${manager()?'':'disabled'}> <span>${esc(label(concept))}</span> <span>+${esc(points)}</span></label>`).join('');
@@ -301,7 +306,16 @@ $('session-select').onchange=run(async event=>{if(event.target.value)await openS
 $('export-league-standings').onclick=run(()=>exportLeagueReport());
 $('export-weekly-results').onclick=run(()=>exportLeagueReport(true));
 $('refresh-session').onclick=run(async()=>{if(session)await openSession(session.id);await listSessions(session?.id);await loadSummary();});
-$('league-configuration').onsubmit=run(async()=>{leagueConfiguration=leagueFormConfig();const saved=await api('/league/configuration','POST',{competitionId:competition.id,configuration:leagueConfiguration});leagueConfiguration=saved.configuration;fillLeagueForm(leagueConfiguration);renderLeagueStats();if(leagueTeams.length===leagueConfiguration.numberOfTeams){const result=await api('/league/generate-schedule','POST',{competitionId:competition.id});await listSessions();showLeagueView('league-calendar');notice(`League setup saved and ${result.generated} USBC sessions generated.`);}else notice(`League setup saved. The calendar will generate automatically after all ${leagueConfiguration.numberOfTeams} teams have been saved.`);await loadSummary();dirty=false;});
+$('league-configuration').onsubmit=run(async()=>{
+  const saved=await api('/league/configuration','POST',{competitionId:competition.id,configuration:leagueFormConfig()});
+  leagueConfiguration=saved.configuration;fillLeagueForm(leagueConfiguration);renderLeagueStats();
+  if(!sessionRows.length&&leagueTeams.length===leagueConfiguration.numberOfTeams){
+    await api('/league/generate-schedule','POST',{competitionId:competition.id});
+    await listSessions();showLeagueView('league-calendar');
+  }
+  if(session)await openSession(session.id);
+  await loadSummary();await loadFinances();notice('League configuration saved.');
+});
 $('generate-league-schedule').onclick=run(async()=>{if(!leagueConfiguration)throw Error('Save the league configuration first.');if(!localizedConfirm('Generate the complete league calendar and replace unscored sessions?'))return;const result=await api('/league/generate-schedule','POST',{competitionId:competition.id});await listSessions();showLeagueView('league-calendar');notice(`${result.generated} league sessions generated.`);});
 $('add-position-round').onclick=()=>{$('position-round-list').insertAdjacentHTML('beforeend',positionRoundRow());};
 $('position-round-list').addEventListener('click',event=>{const button=event.target.closest('[data-remove-position-round]');if(button)button.closest('.position-round-row').remove();});
@@ -312,7 +326,20 @@ $('league-teams-form').onsubmit=run(async()=>{const team=readTeamCard();const sa
 $('generate-integration-code').onclick=run(async()=>{if(!localizedConfirm('Create a new connection code for this league?'))return;const result=await api('/league/integration-code','POST',{competitionId:competition.id});connectionCode=result.connection_code;$('integration-code').textContent=connectionCode;notice('New Brackets league code created.');});
 $('league-calendar-list').addEventListener('change',run(async event=>{const input=event.target.closest('[data-session-date]');if(!input)return;await api('/league/session-date','POST',{competitionId:competition.id,sessionId:input.dataset.sessionDate,date:input.value});await listSessions();notice('Session date updated without changing its matchups.');}));
 $('league-calendar-list').addEventListener('change',run(async event=>{const select=event.target.closest('[data-session-type]');if(!select)return;await api('/league/session-type','POST',{competitionId:competition.id,sessionId:select.dataset.sessionType,type:select.value});await listSessions();notice('Session type and matchups updated.');}));
-function showLeagueView(id){document.querySelectorAll('.league-view').forEach(v=>v.classList.toggle('hidden',v.id!==id));document.querySelectorAll('[data-league-view]').forEach(b=>b.classList.toggle('active',b.dataset.leagueView===id));}
+function syncWeeklyWorkspace(){
+  const visible=manager()&&session&&$('session-select').value===session.id&&!$('league-home').classList.contains('hidden');
+  $('tournament-workspace').classList.toggle('hidden',!visible);
+}
+function showLeagueView(id){
+  document.querySelectorAll('.league-view').forEach(v=>v.classList.toggle('hidden',v.id!==id));
+  document.querySelectorAll('[data-league-view]').forEach(b=>b.classList.toggle('active',b.dataset.leagueView===id));
+  $('session-manager').classList.toggle('hidden',!manager()||id!=='league-calendar');
+  syncWeeklyWorkspace();
+}
+$('league-configuration').addEventListener('invalid',event=>{
+  const disclosure=event.target.closest('details');
+  if(disclosure)disclosure.open=true;
+},true);
 document.querySelectorAll('[data-league-view]').forEach(button=>button.onclick=()=>showLeagueView(button.dataset.leagueView));
 $('league-configuration').elements.bowlerDivisions.addEventListener('change',()=>renderDivisionHandicaps({handicap:{global:{percent:Number($('league-configuration').elements.handicapPercent.value),base:Number($('league-configuration').elements.handicapBase.value),minHandicap:Number($('league-configuration').elements.minimumHandicap.value),maxHandicap:Number($('league-configuration').elements.maximumHandicap.value)}}}));
 $('tournament-workspace').addEventListener('input',()=>{dirty=true;});

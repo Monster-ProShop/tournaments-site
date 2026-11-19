@@ -55,6 +55,8 @@
     'League':'Liga','Session':'Jornada','Lane':'Pista','Bowlers':'Jugadores','Scratch subtotal':'Subtotal sin hándicap','Handicap':'Hándicap','Total with handicap':'Total con hándicap','Result':'Resultado','Pending':'Pendiente','Substitute':'Suplente','Won':'Ganado','Lost':'Perdido','Tie':'Empate','WIN':'GANÓ','LOSS':'PERDIÓ','TIE':'EMPATE','Series + HCP':'Serie + HCP','Team handicap':'Hándicap del equipo','Team total + HCP':'Total del equipo + HCP','Result / points':'Resultado / puntos','Match points':'Puntos del enfrentamiento'
   });
   let language='en';try{language=localStorage.getItem('prodrillos-language')==='es'?'es':'en';}catch{}
+  Object.assign(es,{'Paid on time':'Pago a tiempo','League configuration saved.':'Se guardó la configuración de la liga.',
+    'Use Regenerate Calendar to apply schedule changes to an existing unscored calendar.':'Usa Regenerar calendario para aplicar cambios a un calendario existente sin resultados.'});
   Object.assign(es,{'Bonus points':'Puntos adicionales','Attendance':'Asistencia','Uniform':'Uniforme',
     'Choose valid teams for bonus points':'Selecciona equipos válidos para los puntos adicionales',
     'Choose valid bonus points':'Selecciona puntos adicionales válidos',
