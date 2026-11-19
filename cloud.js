@@ -135,10 +135,18 @@ function positionRoundsFromForm(){return [...document.querySelectorAll('.positio
 function positionRoundRow(value={}){const round=typeof value==='object'?value:{session:value},scope=round.scope||'overall',laneAssignment=round.laneAssignment||'standard';return `<div class="position-round-row"><label>Session number<input data-position-session type="number" min="1" max="60" required value="${esc(round.session||'')}"></label><label>Pairing<select data-position-scope><option value="overall" ${scope==='overall'?'selected':''}>Overall: 1st vs 2nd</option><option value="within-division" ${scope==='within-division'?'selected':''}>Within each division</option><option value="cross-division" ${scope==='cross-division'?'selected':''}>Between divisions: equal positions</option></select></label><label>Lane assignment<select data-position-lanes><option value="fan" ${laneAssignment==='fan'?'selected':''}>Fan</option><option value="standard" ${laneAssignment==='standard'?'selected':''}>Standard</option><option value="manual" ${laneAssignment==='manual'?'selected':''}>Manual</option></select></label><label class="manual-lanes ${laneAssignment==='manual'?'':'hidden'}">Manual starting lanes<input data-manual-lanes placeholder="1, 5, 9, 13" value="${esc((round.manualLanes||[]).join(', '))}"><span class="hint">One starting lane per match, in standings order.</span></label><button type="button" data-remove-position-round>Remove</button></div>`;}
 function renderPositionRounds(rounds=[]){$('position-round-list').innerHTML=(rounds||[]).map(positionRoundRow).join('');}
 function leagueFormConfig(){const f=new FormData($('league-configuration')),n=name=>Number(f.get(name)),divisionNames=splitNames(f.get('bowlerDivisions')),divisionRules={};for(const name of divisionNames){const key=btoa(unescape(encodeURIComponent(name))).replace(/=|\+|\//g,'');divisionRules[name]={percent:Number(f.get(`division-${key}-percent`)),base:Number(f.get(`division-${key}-base`)),minHandicap:Number(f.get(`division-${key}-min`)),maxHandicap:Number(f.get(`division-${key}-max`))};}return {
+ blind:{mode:f.get('blindMode'),amount:n('blindAmount')},
  numberOfTeams:n('numberOfTeams'),bowlersPerTeam:n('bowlersPerTeam'),activeBowlers:n('activeBowlers'),substituteBowlers:n('substituteBowlers'),numberOfSessions:n('numberOfSessions'),gamesPerBowler:n('gamesPerBowler'),startDate:f.get('startDate'),startLane:n('startLane'),positionRounds:positionRoundsFromForm(),teamDivisions:splitNames(f.get('teamDivisions')),bowlerDivisions:splitNames(f.get('bowlerDivisions')),
  points:{gameWin:n('gameWin'),gameTie:n('gameTie'),seriesWin:n('seriesWin'),seriesTie:n('seriesTie'),bonuses:bonuses(f.get('bonuses'))},handicap:{global:{percent:n('handicapPercent'),base:n('handicapBase'),minHandicap:n('minimumHandicap'),maxHandicap:n('maximumHandicap')},divisions:divisionRules},finances:{costPerGame:n('costPerGame'),prizeFundPerSession:n('prizeFundPerSession')},
  sponsorships:[...document.querySelectorAll('[data-sponsor-profile]')].map(input=>({profileId:input.dataset.sponsorProfile,amountPerSession:Number(input.value||0)})).filter(s=>s.amountPerSession>0)};}
+function renderBlindRule(){
+  const {blindMode,blindAmount}=$('league-configuration').elements;
+  blindAmount.disabled=blindMode.value==='disabled';
+  $('blind-amount-field').classList.toggle('hidden',blindAmount.disabled);
+  $('blind-amount-label').textContent=blindMode.value==='fixed'?'Fixed pins':'Pins to deduct';
+}
 function fillLeagueForm(config){const form=$('league-configuration'),set=(name,value)=>{if(form.elements[name])form.elements[name].value=value??'';};
+ set('blindMode',config?.blind?.mode||'disabled');set('blindAmount',config?.blind?.amount??0);renderBlindRule();
  const defaults=config||{numberOfTeams:8,bowlersPerTeam:6,activeBowlers:4,substituteBowlers:2,numberOfSessions:36,gamesPerBowler:3,startLane:1,startDate:new Date().toISOString().slice(0,10),positionRounds:[12,24,36],points:{gameWin:1,gameTie:.5,seriesWin:1,seriesTie:.5,bonuses:[]},handicap:{global:{percent:90,base:220,minHandicap:0,maxHandicap:300}},finances:{costPerGame:0,prizeFundPerSession:0}};
  for(const key of ['numberOfTeams','bowlersPerTeam','activeBowlers','substituteBowlers','numberOfSessions','gamesPerBowler','startDate','startLane'])set(key,defaults[key]??(key==='bowlersPerTeam'?(Number(defaults.activeBowlers||0)+Number(defaults.substituteBowlers||0)):''));renderPositionRounds(defaults.positionRounds||[]);set('teamDivisions',(defaults.teamDivisions||[]).join(', '));set('bowlerDivisions',(defaults.bowlerDivisions||[]).join(', '));
  const rule=defaults.handicap?.global||{};for(const key of ['gameWin','gameTie','seriesWin','seriesTie'])set(key,defaults.points?.[key]);set('bonuses',(defaults.points?.bonuses||[]).map(b=>`${b.concept} | ${b.points}`).join('\n'));set('handicapPercent',rule.percent);set('handicapBase',rule.base);set('minimumHandicap',rule.minHandicap??rule.minAverage??0);set('maximumHandicap',rule.maxHandicap??rule.maxAverage??300);set('costPerGame',defaults.finances?.costPerGame);set('prizeFundPerSession',defaults.finances?.prizeFundPerSession);
@@ -176,7 +184,7 @@ async function openSession(id){
 }
 function renderStandings(){
   const totals=new Map();
-  for(const game of session.games){const t=totals.get(game.profile_id)||{games:0,total:0,high:0};t.games++;t.total+=game.scratch;t.high=Math.max(t.high,game.scratch);totals.set(game.profile_id,t);}
+  for(const game of session.games){if(game.is_blind)continue;const t=totals.get(game.profile_id)||{games:0,total:0,high:0};t.games++;t.total+=game.scratch;t.high=Math.max(t.high,game.scratch);totals.set(game.profile_id,t);}
   const rows=session.state.teams.flatMap(t=>t.players.map(p=>{const s=totals.get(p.profileId)||{games:0,total:0,high:0};return {name:p.name,team:t.name,...s};})).sort((a,b)=>b.total-a.total||a.name.localeCompare(b.name));
   $('results-display').innerHTML=rows.length?table(['Bowler','Team','Games','Scratch pins','Average','High game'],rows.map(r=>[r.name,r.team,r.games,r.total,r.games?(r.total/r.games).toFixed(2):'—',r.games?r.high:'—'])):'<div class="standings-placeholder">Set up the session and select bowlers from the shared roster to begin.</div>';
   const teamRows=session.state.teams.map(team=>{const values=team.players.map(p=>totals.get(p.profileId)).filter(Boolean),pins=values.reduce((sum,v)=>sum+v.total,0),games=values.reduce((sum,v)=>sum+v.games,0);return [team.name,games,pins,games?(pins/games).toFixed(2):'—'];}).sort((a,b)=>b[2]-a[2]);
@@ -185,8 +193,8 @@ function renderStandings(){
   matches.innerHTML=renderMatchResults();
 }
 function playerSessionHandicap(player,totalGames){
-  const prior=session.priorAverages?.[player.profileId],scores=session.games.filter(g=>g.profile_id===player.profileId),entering=Number(player.avg)>0?Number(player.avg):null;
-  const average=prior?.games?Number(prior.average):entering??(scores.length===totalGames?scores.reduce((sum,g)=>sum+Number(g.scratch),0)/scores.length:null);
+  const prior=session.priorAverages?.[player.profileId],games=session.games.filter(g=>g.profile_id===player.profileId),scores=games.filter(g=>!g.is_blind),entering=Number(player.avg)>0?Number(player.avg):null;
+  const average=prior?.games?Number(prior.average):entering??(games.length===totalGames&&scores.length?scores.reduce((sum,g)=>sum+Number(g.scratch),0)/scores.length:null);
   if(average===null)return null;
   const rules=session.state.leagueRules?.handicap||leagueConfiguration?.handicap||{},rule=rules.divisions?.[player.division]||rules.global||{};
   return Math.max(Number(rule.minHandicap??rule.minAverage??0),Math.min(Number(rule.maxHandicap??rule.maxAverage??300),Math.floor((Number(rule.base??220)-average)*Number(rule.percent??90)/100)));
@@ -195,7 +203,13 @@ function teamMatchSummary(team,totalGames){
   const players=team.players||[],handicaps=new Map(players.map(player=>[player.profileId,playerSessionHandicap(player,totalGames)]));
   const rows=players.map(player=>{const hcp=handicaps.get(player.profileId),scores=Array.from({length:totalGames},(_,i)=>session.games.find(g=>g.profile_id===player.profileId&&Number(g.game_number)===i+1));return {player,hcp,scores};});
   const expected=Number(session.state.leagueRules?.activeBowlers||leagueConfiguration?.activeBowlers||0);
-  const summary=Array.from({length:totalGames},(_,i)=>{const playing=rows.filter(row=>row.scores[i]),complete=expected>0&&playing.length===expected&&playing.every(row=>row.hcp!==null),scratch=playing.reduce((sum,row)=>sum+Number(row.scores[i]?.scratch||0),0),handicap=complete?playing.reduce((sum,row)=>sum+row.hcp,0):null;return {complete,entered:playing.length,expected,scratch,handicap,total:complete?scratch+handicap:null};});
+  const summary=Array.from({length:totalGames},(_,i)=>{
+    const playing=rows.filter(row=>row.scores[i]);
+    const complete=expected>0&&playing.length===expected&&playing.every(row=>row.scores[i].is_blind||row.hcp!==null);
+    const scratch=playing.reduce((sum,row)=>sum+Number(row.scores[i].scratch),0);
+    const handicap=complete?playing.reduce((sum,row)=>sum+(row.scores[i].is_blind?0:row.hcp),0):null;
+    return {complete,entered:playing.length,expected,scratch,handicap,total:complete?scratch+handicap:null};
+  });
   return {rows,summary};
 }
 function resultFor(mine,other,type='game'){if(!mine?.complete||!other?.complete)return {kind:'pending',label:`Pending ${mine?.entered||0}/${mine?.expected||0}`,points:null};const points=session.state.leagueRules?.points||leagueConfiguration?.points||{},win=Number(type==='series'?points.seriesWin??1:points.gameWin??1),tie=Number(type==='series'?points.seriesTie??.5:points.gameTie??.5);return mine.total>other.total?{kind:'win',label:'WIN',points:win}:mine.total<other.total?{kind:'loss',label:'LOSS',points:0}:{kind:'tie',label:'TIE',points:tie};}
@@ -203,7 +217,18 @@ function resultBadge(result){return `<span class="result-badge ${result.kind}">$
 function seriesSummary(side){return side.summary.every(game=>game.complete)?{complete:true,total:side.summary.reduce((sum,game)=>sum+game.total,0),entered:side.summary.reduce((sum,game)=>sum+game.entered,0),expected:side.summary.reduce((sum,game)=>sum+game.expected,0)}:{complete:false,total:null,entered:side.summary.reduce((sum,game)=>sum+game.entered,0),expected:side.summary.reduce((sum,game)=>sum+game.expected,0)};}
 function scoreSheetTeam(team,lane,totalGames){
   const side=teamMatchSummary(team,totalGames),{rows,summary}=side;
-  const body=rows.map(({player,hcp,scores})=>{const complete=scores.length===totalGames&&scores.every(Boolean)&&hcp!==null,seriesHcp=complete?scores.reduce((sum,score)=>sum+Number(score.scratch),0)+hcp*totalGames:null;return `<tr><td class="hcp-cell">${hcp===null?'<span class="pending-hcp">Pending</span>':hcp}</td><th>${esc(player.name)}${player.rosterRole==='substitute'?'<small>Substitute</small>':''}</th>${scores.map((score,i)=>{const locked=session.brackets_linked&&score?.source==='brackets';return `<td><input aria-label="${esc(player.name)} game ${i+1}" data-score-profile="${esc(player.profileId)}" data-game="${i+1}" type="number" min="0" max="300" step="1" value="${score?.scratch??''}" placeholder="—" ${locked?'disabled':''}></td>`;}).join('')}<td class="series-hcp">${seriesHcp??'—'}</td></tr>`;}).join('');
+  const body=rows.map(({player,hcp,scores})=>{
+    const complete=scores.every(score=>score&&!score.is_blind)&&hcp!==null;
+    const seriesHcp=complete?scores.reduce((sum,score)=>sum+Number(score.scratch),0)+hcp*totalGames:null;
+    const cells=scores.map((score,i)=>{
+      const locked=session.brackets_linked&&score?.source==='brackets';
+      const acceptsBlind=session.blindRule?.mode&&session.blindRule.mode!=='disabled'||score?.is_blind;
+      const inputType=acceptsBlind?'type="text" maxlength="3"':'type="number" min="0" max="300" step="1"';
+      const value=score?.is_blind?'B':score?.scratch??'';
+      return `<td><input aria-label="${esc(player.name)} game ${i+1}" data-score-profile="${esc(player.profileId)}" data-game="${i+1}" ${inputType} value="${esc(value)}" placeholder="—" ${locked?'disabled':''}>${score?.is_blind?`<small class="blind-pins">${esc(score.scratch)}</small>`:''}</td>`;
+    });
+    return `<tr><td class="hcp-cell">${hcp===null?'<span class="pending-hcp">Pending</span>':hcp}</td><th>${esc(player.name)}${player.rosterRole==='substitute'?'<small>Substitute</small>':''}</th>${cells.join('')}<td class="series-hcp">${seriesHcp??'—'}</td></tr>`;
+  }).join('');
   const cells=values=>values.map(value=>`<td>${value??'—'}</td>`).join('');
   return {...side,html:`<section class="score-sheet-team"><header><div><span>Team</span><strong>${esc(team.name)}</strong></div><div><span>Lane</span><strong>${esc(lane)}</strong></div></header><div class="table-scroll"><table class="paper-score-grid"><thead><tr><th>HCP</th><th>Bowlers</th>${Array.from({length:totalGames},(_,i)=>`<th>Game ${i+1}</th>`).join('')}<th>Series + HCP</th></tr></thead><tbody>${body}<tr class="summary-row"><th colspan="2">Scratch subtotal</th>${cells(summary.map(game=>game.complete?game.scratch:null))}<td>${summary.every(g=>g.complete)?summary.reduce((sum,g)=>sum+g.scratch,0):'—'}</td></tr><tr class="summary-row"><th colspan="2">Team handicap</th>${cells(summary.map(game=>game.handicap))}<td>${summary.every(g=>g.complete)?summary.reduce((sum,g)=>sum+g.handicap,0):'—'}</td></tr><tr class="summary-row total-row"><th colspan="2">Team total + HCP</th>${cells(summary.map(game=>game.total))}<td>${seriesSummary(side).total??'—'}</td></tr><tr class="summary-row outcome-row" data-outcomes><th colspan="2">Result / points</th>${cells(summary.map(()=>''))}<td></td></tr></tbody></table></div></section>`};
 }
@@ -247,15 +272,30 @@ async function saveState(state){
 async function commitScores(){
   try{
     const inputs=[...$('score-matrix-container').querySelectorAll('input[data-score-profile]:not(:disabled)')];
-    if(inputs.some(i=>!i.checkValidity()))throw Error('Scores must be whole numbers between 0 and 300.');
-    const games=inputs.filter(i=>i.value!=='').map(i=>({profileId:i.dataset.scoreProfile,gameNumber:Number(i.dataset.game),scratch:Number(i.value)}));
-    if(inputs.some(i=>i.value===''&&session.games.some(g=>g.profile_id===i.dataset.scoreProfile&&g.game_number===Number(i.dataset.game))))throw Error('A saved score cannot be cleared. Enter a corrected score, including 0 if bowled.');
+    const games=[];
+    for(const input of inputs){
+      const value=input.value.trim(),profileId=input.dataset.scoreProfile,gameNumber=Number(input.dataset.game);
+      if(!value){
+        if(session.games.some(game=>game.profile_id===profileId&&game.game_number===gameNumber))throw Error('A saved score cannot be cleared. Enter a corrected score, including 0 if bowled.');
+        continue;
+      }
+      if(/^b$/i.test(value))games.push({profileId,gameNumber,blind:true});
+      else{
+        if(!/^\d{1,3}$/.test(value)||Number(value)>300||!input.checkValidity())throw Error('Scores must be whole numbers between 0 and 300.');
+        games.push({profileId,gameNumber,scratch:Number(value)});
+      }
+    }
     const teamBonuses=[...$('score-matrix-container').querySelectorAll('[data-bonus-team]')].map(group=>({
       teamId:group.dataset.bonusTeam,
       decisions:[...group.querySelectorAll('[data-bonus-concept]')].map(input=>({concept:input.dataset.bonusConcept,awarded:input.checked}))
     }));
     if(!games.length&&!teamBonuses.length)throw Error('Enter at least one score.');
-    const changed=games.some(g=>{const old=session.games.find(x=>x.profile_id===g.profileId&&x.game_number===g.gameNumber);return old&&old.scratch!==g.scratch;}),reason=changed?localizedPrompt('Reason for correcting the saved score:','Score correction'):'';if(changed&&!reason)return;
+    const changed=games.some(game=>{
+      const old=session.games.find(score=>score.profile_id===game.profileId&&score.game_number===game.gameNumber);
+      return old&&(Boolean(old.is_blind)!==Boolean(game.blind)||(!game.blind&&old.scratch!==game.scratch));
+    });
+    const reason=changed?localizedPrompt('Reason for correcting the saved score:','Score correction'):'';
+    if(changed&&!reason)return;
     const selected=$('match-selector').value;
     await api('/league/scores','POST',sessionBody({games,reason,...(teamBonuses.length?{teamBonuses}:{})}));
     dirty=false;await openSession(session.id);$('match-selector').value=selected;renderScores();await loadSummary();
@@ -336,6 +376,7 @@ function showLeagueView(id){
   $('session-manager').classList.toggle('hidden',!manager()||id!=='league-calendar');
   syncWeeklyWorkspace();
 }
+$('league-configuration').elements.blindMode.addEventListener('change',renderBlindRule);
 $('league-configuration').addEventListener('invalid',event=>{
   const disclosure=event.target.closest('details');
   if(disclosure)disclosure.open=true;

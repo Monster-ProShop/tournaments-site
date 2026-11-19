@@ -55,6 +55,14 @@
     'League':'Liga','Session':'Jornada','Lane':'Pista','Bowlers':'Jugadores','Scratch subtotal':'Subtotal sin hándicap','Handicap':'Hándicap','Total with handicap':'Total con hándicap','Result':'Resultado','Pending':'Pendiente','Substitute':'Suplente','Won':'Ganado','Lost':'Perdido','Tie':'Empate','WIN':'GANÓ','LOSS':'PERDIÓ','TIE':'EMPATE','Series + HCP':'Serie + HCP','Team handicap':'Hándicap del equipo','Team total + HCP':'Total del equipo + HCP','Result / points':'Resultado / puntos','Match points':'Puntos del enfrentamiento'
   });
   let language='en';try{language=localStorage.getItem('prodrillos-language')==='es'?'es':'en';}catch{}
+  Object.assign(es,{
+    'Blind scores':'Puntuación por ausencia','Blind score rule':'Regla de puntuación por ausencia','Disabled':'Desactivada',
+    'Bowler average minus pins':'Promedio del jugador menos pinos','Fixed team-game pins':'Pinos fijos para el juego del equipo',
+    'Fixed pins':'Pinos fijos','Pins to deduct':'Pinos a descontar',
+    'Enter B or b in Score Entry. Blind pins count only for the team and carry no additional handicap.':'Captura B o b en la hoja de resultados. Los pinos por ausencia cuentan solo para el equipo y no reciben hándicap adicional.',
+    'This bowler needs a prior or entering average for a blind score':'Este jugador necesita un promedio previo o de ingreso para aplicar la puntuación por ausencia',
+    'Enable a blind score rule in League Setup':'Activa una regla de puntuación por ausencia en la configuración de la liga'
+  });
   Object.assign(es,{'Paid on time':'Pago a tiempo','League configuration saved.':'Se guardó la configuración de la liga.',
     'Use Regenerate Calendar to apply schedule changes to an existing unscored calendar.':'Usa Regenerar calendario para aplicar cambios a un calendario existente sin resultados.'});
   Object.assign(es,{'Bonus points':'Puntos adicionales','Attendance':'Asistencia','Uniform':'Uniforme',
