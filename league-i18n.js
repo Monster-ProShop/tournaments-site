@@ -55,6 +55,12 @@
     'League':'Liga','Session':'Jornada','Lane':'Pista','Bowlers':'Jugadores','Scratch subtotal':'Subtotal sin hándicap','Handicap':'Hándicap','Total with handicap':'Total con hándicap','Result':'Resultado','Pending':'Pendiente','Substitute':'Suplente','Won':'Ganado','Lost':'Perdido','Tie':'Empate','WIN':'GANÓ','LOSS':'PERDIÓ','TIE':'EMPATE','Series + HCP':'Serie + HCP','Team handicap':'Hándicap del equipo','Team total + HCP':'Total del equipo + HCP','Result / points':'Resultado / puntos','Match points':'Puntos del enfrentamiento'
   });
   let language='en';try{language=localStorage.getItem('prodrillos-language')==='es'?'es':'en';}catch{}
+  Object.assign(es,{'Review scoring changes':'Revisar cambios en resultados','Update results':'Actualizar resultados','Ignore changes':'Ignorar cambios',
+    'Save your score changes before reviewing this match.':'Guarda los cambios de puntuación antes de revisar este enfrentamiento.',
+    'Reason for updating the saved results:':'Motivo para actualizar los resultados guardados:',
+    'Provide a reason for updating these results':'Indica el motivo para actualizar estos resultados',
+    'The review changed. Refresh the session and review it again.':'La revisión cambió. Actualiza la jornada y vuelve a revisarla.',
+    'Match results updated.':'Se actualizaron los resultados del enfrentamiento.','Existing match results kept.':'Se conservaron los resultados del enfrentamiento.'});
   Object.assign(es,{'Entering average hold (games)':'Juegos con promedio de ingreso',
     'Use the entering average for this many games actually bowled. Blind and missed games do not count. Enter 0 to switch after the first scored session.':'Usa el promedio de ingreso para esta cantidad de juegos efectivamente jugados. Los juegos por ausencia o no jugados no cuentan. Captura 0 para cambiar después de la primera jornada con resultados.'});
   Object.assign(es,{'Session Scores':'Resultados de la jornada','League logo':'Logo de la liga','Upload logo':'Subir logo','Remove logo':'Quitar logo',

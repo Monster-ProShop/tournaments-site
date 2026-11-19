@@ -257,7 +257,7 @@ function teamMatchSummary(team,totalGames){
   });
   return {rows,summary};
 }
-function resultFor(mine,other,type='game'){if(!mine?.complete||!other?.complete)return {kind:'pending',label:`Pending ${mine?.entered||0}/${mine?.expected||0}`,points:null};const points=session.state.leagueRules?.points||leagueConfiguration?.points||{},win=Number(type==='series'?points.seriesWin??1:points.gameWin??1),tie=Number(type==='series'?points.seriesTie??.5:points.gameTie??.5);return mine.total>other.total?{kind:'win',label:'WIN',points:win}:mine.total<other.total?{kind:'loss',label:'LOSS',points:0}:{kind:'tie',label:'TIE',points:tie};}
+function resultFor(mine,other,type='game',matchId){if(!mine?.complete||!other?.complete)return {kind:'pending',label:`Pending ${mine?.entered||0}/${mine?.expected||0}`,points:null};const points=session.matchPoints?.[matchId]||session.state.leagueRules?.points||leagueConfiguration?.points||{},win=Number(type==='series'?points.seriesWin??1:points.gameWin??1),tie=Number(type==='series'?points.seriesTie??.5:points.gameTie??.5);return mine.total>other.total?{kind:'win',label:'WIN',points:win}:mine.total<other.total?{kind:'loss',label:'LOSS',points:0}:{kind:'tie',label:'TIE',points:tie};}
 function resultBadge(result){return `<span class="result-badge ${result.kind}">${result.label}${result.points===null?'':` · +${result.points} pt${result.points===1?'':'s'}`}</span>`;}
 function seriesSummary(side){return side.summary.every(game=>game.complete)?{complete:true,total:side.summary.reduce((sum,game)=>sum+game.total,0),entered:side.summary.reduce((sum,game)=>sum+game.entered,0),expected:side.summary.reduce((sum,game)=>sum+game.expected,0)}:{complete:false,total:null,entered:side.summary.reduce((sum,game)=>sum+game.entered,0),expected:side.summary.reduce((sum,game)=>sum+game.expected,0)};}
 function scoreSheetTeam(team,lane,totalGames){
@@ -279,17 +279,37 @@ function scoreSheetTeam(team,lane,totalGames){
   const cells=values=>values.map(value=>`<td>${value??'—'}</td>`).join('');
   return {...side,html:`<section class="score-sheet-team"><header><div><span>Team</span><strong>${esc(team.name)}</strong></div><div><span>Lane</span><strong>${esc(lane)}</strong></div></header><div class="table-scroll"><table class="paper-score-grid"><thead><tr><th>HCP</th><th>Bowlers</th>${Array.from({length:totalGames},(_,i)=>`<th>Game ${i+1}</th>`).join('')}<th>Series + HCP</th></tr></thead><tbody>${body}<tr class="summary-row"><th colspan="2">Scratch subtotal</th>${cells(summary.map(game=>game.complete?game.scratch:null))}<td>${summary.every(g=>g.complete)?summary.reduce((sum,g)=>sum+g.scratch,0):'—'}</td></tr><tr class="summary-row"><th colspan="2">Team handicap</th>${cells(summary.map(game=>game.handicap))}<td>${summary.every(g=>g.complete)?summary.reduce((sum,g)=>sum+g.handicap,0):'—'}</td></tr><tr class="summary-row total-row"><th colspan="2">Team total + HCP</th>${cells(summary.map(game=>game.total))}<td>${seriesSummary(side).total??'—'}</td></tr><tr class="summary-row outcome-row" data-outcomes><th colspan="2">Result / points</th>${cells(summary.map(()=>''))}<td></td></tr></tbody></table></div></section>`};
 }
-function renderMatchResults(){const totalGames=Number(session.state.config?.totalGames||leagueConfiguration?.gamesPerBowler||3);return (session.state.matches||[]).map(match=>{if(!match.teamA?.players||!match.teamB?.players)return `<article class="match-result-card"><h4>Lanes ${esc(match.laneStart||'—')} / ${esc(match.laneEnd||'—')} · Position round pending</h4></article>`;const a=teamMatchSummary(match.teamA,totalGames),b=teamMatchSummary(match.teamB,totalGames),as=seriesSummary(a),bs=seriesSummary(b),ar=a.summary.map((g,i)=>resultFor(g,b.summary[i])),br=b.summary.map((g,i)=>resultFor(g,a.summary[i])),ars=resultFor(as,bs,'series'),brs=resultFor(bs,as,'series'),ap=[...ar,ars].reduce((s,r)=>s+Number(r.points||0),teamBonusPoints(match.teamA)),bp=[...br,brs].reduce((s,r)=>s+Number(r.points||0),teamBonusPoints(match.teamB));return `<article class="match-result-card"><header><strong>Lanes ${esc(match.laneStart)} / ${esc(match.laneEnd)}</strong><span>${esc(match.teamA.name)} vs ${esc(match.teamB.name)}</span></header><div class="table-scroll"><table class="match-result-grid"><thead><tr><th>Team</th>${Array.from({length:totalGames},(_,i)=>`<th>Game ${i+1} + HCP</th>`).join('')}<th>Series + HCP</th><th>Match points</th></tr></thead><tbody><tr><th>${esc(match.teamA.name)}</th>${a.summary.map((g,i)=>`<td><strong>${g.total??'—'}</strong>${resultBadge(ar[i])}</td>`).join('')}<td><strong>${as.total??'—'}</strong>${resultBadge(ars)}</td><td class="match-points">${ap}</td></tr><tr><th>${esc(match.teamB.name)}</th>${b.summary.map((g,i)=>`<td><strong>${g.total??'—'}</strong>${resultBadge(br[i])}</td>`).join('')}<td><strong>${bs.total??'—'}</strong>${resultBadge(brs)}</td><td class="match-points">${bp}</td></tr></tbody></table></div></article>`;}).join('');}
-function configuredBonuses(){
+function renderMatchResults(){const totalGames=Number(session.state.config?.totalGames||leagueConfiguration?.gamesPerBowler||3);return (session.state.matches||[]).map((match,index)=>{if(!match.teamA?.players||!match.teamB?.players)return `<article class="match-result-card"><h4>Lanes ${esc(match.laneStart||'—')} / ${esc(match.laneEnd||'—')} · Position round pending</h4></article>`;const matchId=String(match.id??index+1),a=teamMatchSummary(match.teamA,totalGames),b=teamMatchSummary(match.teamB,totalGames),as=seriesSummary(a),bs=seriesSummary(b),ar=a.summary.map((g,i)=>resultFor(g,b.summary[i],'game',matchId)),br=b.summary.map((g,i)=>resultFor(g,a.summary[i],'game',matchId)),ars=resultFor(as,bs,'series',matchId),brs=resultFor(bs,as,'series',matchId),ap=[...ar,ars].reduce((s,r)=>s+Number(r.points||0),teamBonusPoints(match.teamA,matchId)),bp=[...br,brs].reduce((s,r)=>s+Number(r.points||0),teamBonusPoints(match.teamB,matchId));return `<article class="match-result-card"><header><strong>Lanes ${esc(match.laneStart)} / ${esc(match.laneEnd)}</strong><span>${esc(match.teamA.name)} vs ${esc(match.teamB.name)}</span></header><div class="table-scroll"><table class="match-result-grid"><thead><tr><th>Team</th>${Array.from({length:totalGames},(_,i)=>`<th>Game ${i+1} + HCP</th>`).join('')}<th>Series + HCP</th><th>Match points</th></tr></thead><tbody><tr><th>${esc(match.teamA.name)}</th>${a.summary.map((g,i)=>`<td><strong>${g.total??'—'}</strong>${resultBadge(ar[i])}</td>`).join('')}<td><strong>${as.total??'—'}</strong>${resultBadge(ars)}</td><td class="match-points">${ap}</td></tr><tr><th>${esc(match.teamB.name)}</th>${b.summary.map((g,i)=>`<td><strong>${g.total??'—'}</strong>${resultBadge(br[i])}</td>`).join('')}<td><strong>${bs.total??'—'}</strong>${resultBadge(brs)}</td><td class="match-points">${bp}</td></tr></tbody></table></div>${renderScoringReview(matchId)}</article>`;}).join('');}
+function renderScoringReview(matchId){
+  if(!manager())return '';
+  const review=session.reviews?.find(item=>item.matchId===matchId);
+  if(!review)return '';
+  const delta=(a,b)=>a===b?(a??'—'):`${a??'—'} → ${b??'—'}`;
+  const rows=review.after.map((team,i)=>{
+    const previous=review.before[i];
+    return [team.name,...team.totals.map((score,n)=>delta(previous.totals[n],score)),delta(previous.series,team.series),delta(previous.points,team.points)];
+  });
+  const changes=review.after.flatMap((team,i)=>team.handicaps.flatMap(item=>{
+    const previous=review.before[i].handicaps.find(old=>old.id===item.id&&old.game===item.game);
+    return previous&&previous.pins!==item.pins?[[item.name,item.game,delta(previous.pins,item.pins)]]:[];
+  }));
+  return `<details class="scoring-review"><summary>Review scoring changes</summary>
+    ${table(['Team',...review.after[0].totals.map((_,i)=>`Game ${i+1} + HCP`),'Series + HCP','Match points'],rows)}
+    ${changes.length?table(['Bowler','Game','Handicap'],changes):''}
+    <div class="action-row"><button type="button" class="primary" data-review-match="${esc(matchId)}" data-review-decision="update">Update results</button>
+    <button type="button" data-review-match="${esc(matchId)}" data-review-decision="ignore">Ignore changes</button></div>
+  </details>`;
+}
+function configuredBonuses(matchId){
   const points=session.state.leagueRules?.points||leagueConfiguration?.points;
-  return new Map((session.bonusRules||points?.bonuses||[]).map(({concept,points})=>[concept,Number(points)]));
+  return new Map((session.matchBonuses?.[matchId]||session.bonusRules||points?.bonuses||[]).map(({concept,points})=>[concept,Number(points)]));
 }
-function teamBonusPoints(team){
+function teamBonusPoints(team,matchId){
   const awarded=new Set((session.state.teamBonuses?.[team.id]||[]).filter(decision=>decision.awarded).map(decision=>decision.concept));
-  return [...configuredBonuses()].reduce((sum,[concept,points])=>sum+(awarded.has(concept)?points:0),0);
+  return [...configuredBonuses(matchId)].reduce((sum,[concept,points])=>sum+(awarded.has(concept)?points:0),0);
 }
-function bonusFields(team){
-  const bonuses=configuredBonuses();
+function bonusFields(team,matchId){
+  const bonuses=configuredBonuses(matchId);
   if(!bonuses.size)return '';
   const saved=new Map((session.state.teamBonuses?.[team.id]||[]).map(({concept,awarded})=>[concept,awarded]));
   const label=concept=>{
@@ -307,8 +327,9 @@ function renderScores(){
   if(!teamA?.players||!teamB?.players){$('score-matrix-container').innerHTML='<div class="standings-placeholder">Position-round teams will appear after the preceding standings are complete.</div>';$('commit-scores-btn').classList.add('hidden');return;}
   const totalGames=Number(session.state.config?.totalGames||leagueConfiguration?.gamesPerBowler||3),a=scoreSheetTeam(teamA,match.laneStart,totalGames),b=scoreSheetTeam(teamB,match.laneEnd,totalGames);
   $('score-matrix-container').innerHTML=`<div class="score-sheet-heading"><div><span>League</span><strong>${esc(competition.name)}</strong></div><div><span>Session</span><strong>${esc(session.label)}</strong></div><div><span>Date</span><strong>${esc(String(session.session_date).slice(0,10))}</strong></div></div><div class="league-score-sheet">${a.html}${b.html}</div>`;
-  document.querySelectorAll('[data-outcomes]').forEach((row,index)=>{const mine=index?b:a,other=index?a:b,cells=row.querySelectorAll('td');mine.summary.forEach((game,i)=>cells[i].innerHTML=resultBadge(resultFor(game,other.summary[i])));cells[cells.length-1].innerHTML=resultBadge(resultFor(seriesSummary(mine),seriesSummary(other),'series'));});
-  $('score-matrix-container').querySelectorAll('.score-sheet-team').forEach((sheet,index)=>sheet.insertAdjacentHTML('beforeend',bonusFields(index?teamB:teamA)));
+  document.querySelectorAll('[data-outcomes]').forEach((row,index)=>{const mine=index?b:a,other=index?a:b,cells=row.querySelectorAll('td');mine.summary.forEach((game,i)=>cells[i].innerHTML=resultBadge(resultFor(game,other.summary[i],'game',selected)));cells[cells.length-1].innerHTML=resultBadge(resultFor(seriesSummary(mine),seriesSummary(other),'series',selected));});
+  $('score-matrix-container').querySelectorAll('.score-sheet-team').forEach((sheet,index)=>sheet.insertAdjacentHTML('beforeend',bonusFields(index?teamB:teamA,selected)));
+  $('score-matrix-container').insertAdjacentHTML('afterbegin',renderScoringReview(selected));
   $('commit-scores-btn').classList.toggle('hidden',!manager());
 }
 async function saveState(state){
@@ -437,6 +458,24 @@ $('league-configuration').addEventListener('invalid',event=>{
 document.querySelectorAll('[data-league-view]').forEach(button=>button.onclick=()=>showLeagueView(button.dataset.leagueView));
 $('league-configuration').elements.bowlerDivisions.addEventListener('change',()=>renderDivisionHandicaps({handicap:{global:{percent:Number($('league-configuration').elements.handicapPercent.value),base:Number($('league-configuration').elements.handicapBase.value),minHandicap:Number($('league-configuration').elements.minimumHandicap.value),maxHandicap:Number($('league-configuration').elements.maximumHandicap.value)}}}));
 $('tournament-workspace').addEventListener('input',()=>{dirty=true;});
+const decideMatchReview=run(async event=>{
+  const button=event.target.closest('[data-review-match]');
+  if(dirty)throw Error('Save your score changes before reviewing this match.');
+  const review=session.reviews?.find(item=>item.matchId===button.dataset.reviewMatch);
+  if(!review)return;
+  const decision=button.dataset.reviewDecision;
+  const reason=decision==='update'?localizedPrompt('Reason for updating the saved results:',''):'';
+  if(decision==='update'&&!reason?.trim())return;
+  button.disabled=true;
+  try{
+    await api('/league/match-review','POST',sessionBody({matchId:review.matchId,token:review.token,decision,reason}));
+    await openSession(session.id);await loadSummary();
+    notice(decision==='update'?'Match results updated.':'Existing match results kept.');
+  }finally{button.disabled=false;}
+});
+$('tournament-workspace').addEventListener('click',event=>{
+  if(event.target.closest('[data-review-match]'))void decideMatchReview(event);
+});
 window.addEventListener('beforeunload',event=>{if(dirty){event.preventDefault();event.returnValue='';}});
 // Refresh linked scores only when there are no local edits; never overwrite a form in use.
 setInterval(()=>{if(session?.brackets_linked&&!dirty&&!saving&&!document.hidden)void api('/league/session'+query()+'&session_id='+session.id).then(next=>{if(next.revision!==session.revision){session=next;renderStandings();void loadSummary().catch(fail);if($('match-selector').value)renderScores();$('session-status').textContent='Linked scores updated from Brackets · revision '+next.revision;}}).catch(fail);},30000);
