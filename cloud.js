@@ -1,4 +1,4 @@
-import { teamStandings, bowlerStandings, honorTable, pointsNote, reportHTML, prepareReport } from './league-report.js';
+import { teamStandings, bowlerStandings, honorTable, pointsNote, reportHTML, prepareReport } from './league-report.js?v=20261119-logo';
 import { createAuthClient } from 'https://esm.sh/@neondatabase/auth@0.5.0-beta?bundle';
 
 const $=id=>document.getElementById(id);
@@ -9,6 +9,7 @@ const authKey='prodrillos-auth-session';
 const savedAuth=()=>{try{return JSON.parse(sessionStorage.getItem(authKey)||'null');}catch{return null;}};
 let sessionToken=savedAuth()?.token||null,user=null,role='user',accountMode='user',competition=null,session=null,roster=[],leagueTeams=[],competitionRows=[],accessUsers=[],sessionRows=[],leagueConfiguration=null,connectionCode='',dirty=false,saving=false,newBowlerTarget=null,editingProfileId=null,currentTeamNumber=1;
 const teamDrafts=new Map();
+let removeLeagueLogo=false;
 const t=message=>window.LeagueI18n.t(message);
 const localizedConfirm=message=>confirm(t(message));
 const localizedPrompt=(message,value)=>prompt(t(message),t(value));
@@ -101,9 +102,10 @@ async function openCompetition(row){
   $('league-export-actions').classList.toggle('hidden',!manager());
   await loadRoster();await loadConfiguration();await loadTeams();await listSessions();await loadSummary();await loadFinances();
   const requested=new URLSearchParams(location.search).get('session');
-  if(requested&&[...$('session-select').options].some(o=>o.value===requested))await openSession(requested);
+  const selected=sessionRows.find(row=>row.id===requested)||sessionRows.findLast(row=>row.has_scores)||sessionRows[0];
+  if(manager()&&selected)await openSession(selected.id);
 }
-async function listSessions(selected){
+async function listSessions(selected=session?.id){
   sessionRows=await api('/league/sessions'+query());
   $('session-select').innerHTML='<option value="">Choose a session</option>'+sessionRows.map(s=>`<option value="${esc(s.id)}">${esc(String(s.session_date).slice(0,10))} · ${esc(s.label)}</option>`).join('');
   renderCalendar();renderLeagueStats();
@@ -112,7 +114,6 @@ async function listSessions(selected){
 function renderLeagueReport(){
   $('team-standings').innerHTML=teamStandings(leagueReport.teams)+'<p class="hint">'+esc(t(pointsNote))+'</p>';
   $('bowler-standings').innerHTML=bowlerStandings(leagueReport.bowlers);
-  $('season-summary').innerHTML=leagueReport.bowlers.length?'<h3>'+esc(t('League averages · all sessions'))+'</h3>'+bowlerStandings(leagueReport.bowlers):'';
   $('honor-scores').innerHTML=honorTable(leagueReport.honorScores);
 }
 async function loadSummary(){leagueReport=await api('/league/report'+query());renderLeagueReport();}
@@ -125,7 +126,7 @@ async function exportLeagueReport(weekly=false){
   preview.document.body.textContent=t('Preparing report…');
   try {
     const report=await api('/league/report'+query()+'&export=1'+(weekly?'&through_session_id='+encodeURIComponent(session.id):''));
-    preview.document.open();preview.document.write(reportHTML(report,competition));preview.document.close();await prepareReport(preview);
+    preview.document.open();preview.document.write(reportHTML(report,competition,leagueConfiguration?.leagueLogo));preview.document.close();await prepareReport(preview);
   }catch(error){preview.close();throw error;}
 }
 async function loadFinances(){const f=await api('/league/finances'+query()),money=v=>new Intl.NumberFormat(window.LeagueI18n.language==='es'?'es-MX':'en-US',{style:'currency',currency:'USD'}).format(Number(v||0));$('league-finance-summary').innerHTML=[['Active bowlers',f.activeBowlers],['Weekly gross',money(f.weeklyGross)],['Weekly sponsorship',money(f.weeklySponsored)],['Weekly due',money(f.weeklyDue)],['Season gross',money(f.seasonGross)],['Season sponsorship',money(f.seasonSponsored)],['Season due',money(f.seasonDue)],['Weekly lineage',money(f.lineagePerSession)],['Weekly prize fund',money(f.prizeFundPerSession)]].map(([l,v])=>`<div class="stat-card"><span class="hint">${l}</span><strong>${v}</strong></div>`).join('');}
@@ -145,7 +146,32 @@ function renderBlindRule(){
   $('blind-amount-field').classList.toggle('hidden',blindAmount.disabled);
   $('blind-amount-label').textContent=blindMode.value==='fixed'?'Fixed pins':'Pins to deduct';
 }
+function renderLeagueLogo(logo){
+  const preview=$('league-logo-preview');
+  if(logo)preview.src=logo;else preview.removeAttribute('src');
+  preview.classList.toggle('hidden',!logo);
+  $('remove-league-logo').classList.toggle('hidden',!logo);
+}
+async function encodeLeagueLogo(file){
+  const invalid='Choose a PNG, JPEG, or WebP logo up to 5 MB.';
+  if(!['image/png','image/jpeg','image/webp'].includes(file.type)||file.size>5_000_000)throw Error(invalid);
+  const image=await createImageBitmap(file).catch(()=>{throw Error(invalid);});
+  try{
+    const canvas=document.createElement('canvas');
+    let limit=320;
+    while(limit>=64){
+      const scale=Math.min(1,limit/Math.max(image.width,image.height));
+      canvas.width=Math.max(1,Math.round(image.width*scale));canvas.height=Math.max(1,Math.round(image.height*scale));
+      canvas.getContext('2d').drawImage(image,0,0,canvas.width,canvas.height);
+      const logo=canvas.toDataURL('image/png');
+      if(logo.length<=180000)return logo;
+      limit=Math.floor(limit*.75);
+    }
+    throw Error(invalid);
+  }finally{image.close();}
+}
 function fillLeagueForm(config){const form=$('league-configuration'),set=(name,value)=>{if(form.elements[name])form.elements[name].value=value??'';};
+ removeLeagueLogo=false;$('league-logo-file').value='';renderLeagueLogo(config?.leagueLogo);
  set('blindMode',config?.blind?.mode||'disabled');set('blindAmount',config?.blind?.amount??0);renderBlindRule();
  const defaults=config||{numberOfTeams:8,bowlersPerTeam:6,activeBowlers:4,substituteBowlers:2,numberOfSessions:36,gamesPerBowler:3,startLane:1,startDate:new Date().toISOString().slice(0,10),positionRounds:[12,24,36],points:{gameWin:1,gameTie:.5,seriesWin:1,seriesTie:.5,bonuses:[]},handicap:{global:{percent:90,base:220,minHandicap:0,maxHandicap:300}},finances:{costPerGame:0,prizeFundPerSession:0}};
  for(const key of ['numberOfTeams','bowlersPerTeam','activeBowlers','substituteBowlers','numberOfSessions','gamesPerBowler','startDate','startLane'])set(key,defaults[key]??(key==='bowlersPerTeam'?(Number(defaults.activeBowlers||0)+Number(defaults.substituteBowlers||0)):''));renderPositionRounds(defaults.positionRounds||[]);set('teamDivisions',(defaults.teamDivisions||[]).join(', '));set('bowlerDivisions',(defaults.bowlerDivisions||[]).join(', '));
@@ -175,20 +201,37 @@ function renderLeagueStats(){$('league-stat-grid').innerHTML=[['Teams',leagueCon
 function table(head,rows){return '<div class="table-scroll"><table class="score-grid"><thead><tr>'+head.map(h=>'<th>'+esc(t(h))+'</th>').join('')+'</tr></thead><tbody>'+rows.map(row=>'<tr>'+row.map(v=>'<td translate="no">'+esc(v)+'</td>').join('')+'</tr>').join('')+'</tbody></table></div>';}
 async function openSession(id){
   if(!canLeave()){$('session-select').value=session?.id||'';return;}
+  const sameSession=session?.id===id;
+  const page=sameSession&&document.querySelector('[data-page][aria-current="page"]')?.dataset.page;
+  const match=sameSession&&$('match-selector').value;
   session=await api('/league/session'+query()+'&session_id='+encodeURIComponent(id));dirty=false;
   $('session-select').value=id;syncWeeklyWorkspace();
   window.TournamentManager.setState(session.state,manager());
+  if(page)window.showPage(page);
+  if(match){$('match-selector').value=match;renderScores();}
   const url=new URL(location.href);url.searchParams.set('competition',competition.id);url.searchParams.set('session',id);history.replaceState(null,'',url);
   $('session-status').textContent=`${session.label} · ${String(session.session_date).slice(0,10)} · ${session.brackets_linked?'Linked bracket scores sync automatically.':'Cloud session'} · Saved revision ${session.revision}`;
   renderStandings();notice('Session loaded from the cloud.');return true;
 }
 function renderStandings(){
-  const totals=new Map();
-  for(const game of session.games){if(game.is_blind)continue;const t=totals.get(game.profile_id)||{games:0,total:0,high:0};t.games++;t.total+=game.scratch;t.high=Math.max(t.high,game.scratch);totals.set(game.profile_id,t);}
-  const rows=session.state.teams.flatMap(t=>t.players.map(p=>{const s=totals.get(p.profileId)||{games:0,total:0,high:0};return {name:p.name,team:t.name,...s};})).sort((a,b)=>b.total-a.total||a.name.localeCompare(b.name));
-  $('results-display').innerHTML=rows.length?table(['Bowler','Team','Games','Scratch pins','Average','High game'],rows.map(r=>[r.name,r.team,r.games,r.total,r.games?(r.total/r.games).toFixed(2):'—',r.games?r.high:'—'])):'<div class="standings-placeholder">Set up the session and select bowlers from the shared roster to begin.</div>';
-  const teamRows=session.state.teams.map(team=>{const values=team.players.map(p=>totals.get(p.profileId)).filter(Boolean),pins=values.reduce((sum,v)=>sum+v.total,0),games=values.reduce((sum,v)=>sum+v.games,0);return [team.name,games,pins,games?(pins/games).toFixed(2):'—'];}).sort((a,b)=>b[2]-a[2]);
-  if(teamRows.length&&!$('team-standings').textContent.trim())$('team-standings').innerHTML=table(['Team','Bowler games','Scratch pins','Average'],teamRows);
+  const totalGames=Number(session.state.config?.totalGames||leagueConfiguration?.gamesPerBowler||3);
+  const gameColumns=Array.from({length:totalGames},(_,i)=>i+1);
+  const byBowler=new Map();
+  for(const game of session.games){
+    if(!byBowler.has(game.profile_id))byBowler.set(game.profile_id,new Map());
+    byBowler.get(game.profile_id).set(Number(game.game_number),game);
+  }
+  const rows=session.state.teams.flatMap(team=>team.players.filter(player=>byBowler.has(player.profileId)).map(player=>{
+    const games=byBowler.get(player.profileId),hcp=playerSessionHandicap(player,totalGames);
+    const played=[...games.values()].filter(game=>!game.is_blind);
+    const scratch=played.reduce((total,game)=>total+Number(game.scratch),0);
+    const series=played.length===totalGames&&hcp!==null?scratch+hcp*totalGames:'—';
+    return [player.name,team.name,...gameColumns.map(n=>{
+      const game=games.get(n);
+      return game?.is_blind?`B (${game.scratch})`:game?.scratch??'—';
+    }),played.length?scratch:'—',series];
+  }));
+  $('results-display').innerHTML=rows.length?table(['Bowler','Team',...gameColumns.map(n=>`Game ${n}`),'Scratch pins','Series + HCP'],rows):`<p class="hint">${esc(t('No scores yet.'))}</p>`;
   let matches=$('match-results');if(!matches){matches=document.createElement('div');matches.id='match-results';$('page-matches').append(matches);}
   matches.innerHTML=renderMatchResults();
 }
@@ -347,7 +390,10 @@ $('export-league-standings').onclick=run(()=>exportLeagueReport());
 $('export-weekly-results').onclick=run(()=>exportLeagueReport(true));
 $('refresh-session').onclick=run(async()=>{if(session)await openSession(session.id);await listSessions(session?.id);await loadSummary();});
 $('league-configuration').onsubmit=run(async()=>{
-  const saved=await api('/league/configuration','POST',{competitionId:competition.id,configuration:leagueFormConfig()});
+  const configuration=leagueFormConfig(),file=$('league-logo-file').files[0];
+  if(file)configuration.leagueLogo=await encodeLeagueLogo(file);
+  else if(removeLeagueLogo)configuration.leagueLogo=null;
+  const saved=await api('/league/configuration','POST',{competitionId:competition.id,configuration});
   leagueConfiguration=saved.configuration;fillLeagueForm(leagueConfiguration);renderLeagueStats();
   if(!sessionRows.length&&leagueTeams.length===leagueConfiguration.numberOfTeams){
     await api('/league/generate-schedule','POST',{competitionId:competition.id});
@@ -356,6 +402,9 @@ $('league-configuration').onsubmit=run(async()=>{
   if(session)await openSession(session.id);
   await loadSummary();await loadFinances();notice('League configuration saved.');
 });
+$('remove-league-logo').onclick=()=>{
+  removeLeagueLogo=true;$('league-logo-file').value='';renderLeagueLogo(null);
+};
 $('generate-league-schedule').onclick=run(async()=>{if(!leagueConfiguration)throw Error('Save the league configuration first.');if(!localizedConfirm('Generate the complete league calendar and replace unscored sessions?'))return;const result=await api('/league/generate-schedule','POST',{competitionId:competition.id});await listSessions();showLeagueView('league-calendar');notice(`${result.generated} league sessions generated.`);});
 $('add-position-round').onclick=()=>{$('position-round-list').insertAdjacentHTML('beforeend',positionRoundRow());};
 $('position-round-list').addEventListener('click',event=>{const button=event.target.closest('[data-remove-position-round]');if(button)button.closest('.position-round-row').remove();});

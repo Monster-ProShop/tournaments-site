@@ -44,6 +44,8 @@ h3 { color: var(--text-main); font-size: 21px; font-weight: 600; letter-spacing:
 .league-form .setup-disclosure{border:1px solid #494133;border-radius:12px;padding:12px 16px}
 .league-form .setup-disclosure summary{color:var(--gold-light);font-weight:700;cursor:pointer}
 .blind-pins{display:block;color:var(--gold-light)}
+.league-logo-controls{display:flex;align-items:end;gap:12px;flex-wrap:wrap}
+.league-logo-controls img{width:80px;height:64px;object-fit:contain}
 .league-form .setup-disclosure[open] summary{margin-bottom:14px}
 .league-form .division-rule{grid-template-columns:minmax(100px,1fr) minmax(0,3fr)}
 .league-form .division-rule .field-grid{grid-template-columns:repeat(auto-fit,minmax(88px,1fr))}

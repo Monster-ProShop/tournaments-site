@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <script src="league-i18n.js?v=20261119-blind"></script>
+    <script src="league-i18n.js?v=20261119-logo"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tournaments by ProDrillOS</title>
@@ -94,7 +94,7 @@
         ::-webkit-scrollbar-thumb { background: var(--gold-dim); border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: var(--gold); }
     </style>
-    <link rel="stylesheet" href="brand.css?v=20261119-blind">
+    <link rel="stylesheet" href="brand.css?v=20261119-logo">
 </head>
 <body>
 
@@ -133,7 +133,7 @@
 <section id="session-panel" class="container hidden">
  <div class="panel-heading"><div><p id="competition-location" class="eyebrow"></p><h2 id="competition-name"></h2></div><button id="back-competitions">All competitions</button></div>
  <div class="league-tabs" role="tablist"><button class="active" data-league-view="league-home">Overview</button><button data-league-view="league-team-standings">Team Standings</button><button data-league-view="league-bowler-standings">Bowler Standings</button><button data-league-view="league-honor-scores">Honor Scores</button><button data-league-view="league-calendar">Calendar</button><button data-league-view="league-finances">Finances</button><button id="league-teams-tab" data-league-view="league-teams">Teams & Rosters</button><button id="league-integrations-tab" data-league-view="league-integrations">Integrations</button><button id="league-setup-tab" data-league-view="league-setup">League Setup</button></div>
- <section id="league-home" class="league-view"><div class="stat-grid" id="league-stat-grid"></div><div id="weekly-admin-overview" class="hidden"><div class="action-row"><label>Bowling session<select id="session-select"><option value="">Choose a session</option></select></label><button id="refresh-session">Refresh scores</button></div><p id="session-status" class="hint"></p><div id="season-summary"></div></div></section>
+ <section id="league-home" class="league-view"><div class="stat-grid" id="league-stat-grid"></div><div id="weekly-admin-overview" class="hidden"><div class="action-row"><label>Bowling session<select id="session-select"><option value="">Choose a session</option></select></label><button id="refresh-session">Refresh scores</button></div><p id="session-status" class="hint"></p></div></section>
  <div class="action-row hidden" id="league-export-actions"><button id="export-league-standings">Export current standings</button><button id="export-weekly-results">Export weekly results</button></div>
  <section id="league-team-standings" class="league-view hidden"><h3>Team Standings</h3><div id="team-standings"></div></section>
  <section id="league-bowler-standings" class="league-view hidden"><h3>Bowler Standings</h3><div id="bowler-standings"></div></section>
@@ -149,6 +149,10 @@
  <section id="league-integrations" class="league-view hidden"><h3>Brackets Integration</h3><p>Use this code in Brackets to connect the same league roster, bowler IDs, handicaps, and bowling session.</p><div class="integration-code" id="integration-code">No connection code yet</div><br><button id="generate-integration-code">Create / Replace League Code</button><p class="hint">Replacing the code prevents new connections using the previous code. Existing score history is retained.</p></section>
  <section id="league-setup" class="league-view hidden"><h3>Configure League</h3><p class="hint">Use Regenerate Calendar to apply schedule changes to an existing unscored calendar.</p>
   <form id="league-configuration" class="league-form">
+   <details class="setup-disclosure"><summary>League logo</summary>
+    <p class="hint">Optional. The logo appears on standings and weekly results PDFs.</p>
+    <div class="league-logo-controls"><img id="league-logo-preview" class="hidden" alt="League logo"><label>Upload logo<input id="league-logo-file" type="file" accept="image/png,image/jpeg,image/webp"></label><button id="remove-league-logo" type="button" class="hidden">Remove logo</button></div>
+   </details>
    <fieldset><legend>League format</legend><div class="field-grid"><label>Number of teams<input name="numberOfTeams" type="number" min="4" max="48" step="2" required></label><label>Bowlers permitted per team<input name="bowlersPerTeam" type="number" min="1" max="36" required></label><label>Active bowlers per session<input name="activeBowlers" type="number" min="1" max="12" required></label><label>Substitute bowlers per roster<input name="substituteBowlers" type="number" min="0" max="24" required></label><label>Number of sessions<input name="numberOfSessions" type="number" min="1" max="60" required></label><label>Games per bowler per session<input name="gamesPerBowler" type="number" min="1" max="12" required></label><label>First session date<input name="startDate" type="date" required></label><label>Schedule starting lane<input name="startLane" type="number" min="1" max="199" required><span class="hint">Example: enter 16 to schedule the league on lanes 16 and higher.</span></label></div></fieldset>
    <fieldset><legend>Position rounds</legend><p class="hint">Choose each position-round session, how standings are paired, and how matches are assigned to lanes.</p><div id="position-round-list"></div><button id="add-position-round" type="button">Add position round</button></fieldset>
    <fieldset><legend>Divisions</legend><div class="field-grid"><label>Team division names<input name="teamDivisions" placeholder="North, South"></label><label>Bowler division names<input name="bowlerDivisions" placeholder="A, B, C"></label></div></fieldset>
@@ -168,7 +172,7 @@
 </section>
 <div id="tournament-workspace" class="hidden">
 <nav class="nav-buttons container" aria-label="Tournament navigation">
-    <button data-page="page-results" aria-current="page" onclick="showPage('page-results')" data-i18n="nav_results">Leaderboards</button>
+    <button data-page="page-results" aria-current="page" onclick="showPage('page-results')">Session Scores</button>
     <button data-page="page-matches" onclick="showPage('page-matches')" data-i18n="nav_matches">Match Data</button>
     
     <span id="admin-nav" class="hidden" style="display: flex; gap: 12px; flex-wrap: wrap;">
@@ -182,8 +186,7 @@
 </nav>
 
 <div id="page-results" class="container">
-    <h3 data-i18n="results_title">Tournament standings</h3>
-    <p style="color: var(--text-muted);" data-i18n="results_desc">Real-time standings and individual division results will populate here.</p>
+    <h3>Session Scores</h3>
     <div id="results-display"><div class="standings-placeholder"><span class="placeholder-symbol" aria-hidden="true">—</span><p data-i18n="standings_placeholder">Standings will appear here as tournament results become available.</p></div></div>
 </div>
 
@@ -693,7 +696,7 @@ window.TournamentManager = {
     };
 </script>
 <script src="portal-config.js?v=20261009-8"></script>
-<script type="module" src="cloud.js?v=20261119-blind"></script>
+<script type="module" src="cloud.js?v=20261119-logo"></script>
 </body>
 </html>
 

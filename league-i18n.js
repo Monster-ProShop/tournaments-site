@@ -55,6 +55,10 @@
     'League':'Liga','Session':'Jornada','Lane':'Pista','Bowlers':'Jugadores','Scratch subtotal':'Subtotal sin hándicap','Handicap':'Hándicap','Total with handicap':'Total con hándicap','Result':'Resultado','Pending':'Pendiente','Substitute':'Suplente','Won':'Ganado','Lost':'Perdido','Tie':'Empate','WIN':'GANÓ','LOSS':'PERDIÓ','TIE':'EMPATE','Series + HCP':'Serie + HCP','Team handicap':'Hándicap del equipo','Team total + HCP':'Total del equipo + HCP','Result / points':'Resultado / puntos','Match points':'Puntos del enfrentamiento'
   });
   let language='en';try{language=localStorage.getItem('prodrillos-language')==='es'?'es':'en';}catch{}
+  Object.assign(es,{'Session Scores':'Resultados de la jornada','League logo':'Logo de la liga','Upload logo':'Subir logo','Remove logo':'Quitar logo',
+    'Optional. The logo appears on standings and weekly results PDFs.':'Opcional. El logo aparece en los PDF de posiciones y resultados semanales.',
+    'Choose a PNG, JPEG, or WebP logo up to 5 MB.':'Selecciona un logo PNG, JPEG o WebP de hasta 5 MB.',
+    'Invalid league logo. Choose a smaller PNG, JPEG, or WebP image.':'El logo de la liga no es válido. Selecciona una imagen PNG, JPEG o WebP más pequeña.'});
   Object.assign(es,{
     'Blind scores':'Puntuación por ausencia','Blind score rule':'Regla de puntuación por ausencia','Disabled':'Desactivada',
     'Bowler average minus pins':'Promedio del jugador menos pinos','Fixed team-game pins':'Pinos fijos para el juego del equipo',
