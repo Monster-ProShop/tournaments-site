@@ -55,6 +55,11 @@
     'League':'Liga','Session':'Jornada','Lane':'Pista','Bowlers':'Jugadores','Scratch subtotal':'Subtotal sin hándicap','Handicap':'Hándicap','Total with handicap':'Total con hándicap','Result':'Resultado','Pending':'Pendiente','Substitute':'Suplente','Won':'Ganado','Lost':'Perdido','Tie':'Empate','WIN':'GANÓ','LOSS':'PERDIÓ','TIE':'EMPATE','Series + HCP':'Serie + HCP','Team handicap':'Hándicap del equipo','Team total + HCP':'Total del equipo + HCP','Result / points':'Resultado / puntos','Match points':'Puntos del enfrentamiento'
   });
   let language='en';try{language=localStorage.getItem('prodrillos-language')==='es'?'es':'en';}catch{}
+  Object.assign(es,{'Blank boxes will remove those saved scores. Enter a reason to confirm.':'Las casillas vacías eliminarán esos resultados guardados. Escribe el motivo para confirmar.',
+    'Choose each score only once':'Selecciona cada resultado una sola vez',
+    'Choose either a corrected score or clear the saved score':'Captura un resultado corregido o borra el resultado guardado',
+    'Enter a correction reason of up to 300 characters before clearing a saved score':'Escribe un motivo de hasta 300 caracteres antes de borrar un resultado guardado',
+    'A score to clear is no longer saved. Refresh the session.':'El resultado que quieres borrar ya no está guardado. Actualiza la jornada.'});
   Object.assign(es,{'Review scoring changes':'Revisar cambios en resultados','Update results':'Actualizar resultados','Ignore changes':'Ignorar cambios',
     'Save your score changes before reviewing this match.':'Guarda los cambios de puntuación antes de revisar este enfrentamiento.',
     'Reason for updating the saved results:':'Motivo para actualizar los resultados guardados:',

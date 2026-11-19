@@ -344,7 +344,7 @@ async function commitScores(){
     for(const input of inputs){
       const value=input.value.trim(),profileId=input.dataset.scoreProfile,gameNumber=Number(input.dataset.game);
       if(!value){
-        if(session.games.some(game=>game.profile_id===profileId&&game.game_number===gameNumber))throw Error('A saved score cannot be cleared. Enter a corrected score, including 0 if bowled.');
+        if(session.games.some(game=>game.profile_id===profileId&&Number(game.game_number)===gameNumber))games.push({profileId,gameNumber,clear:true});
         continue;
       }
       if(/^b$/i.test(value))games.push({profileId,gameNumber,blind:true});
@@ -358,11 +358,12 @@ async function commitScores(){
       decisions:[...group.querySelectorAll('[data-bonus-concept]')].map(input=>({concept:input.dataset.bonusConcept,awarded:input.checked}))
     }));
     if(!games.length&&!teamBonuses.length)throw Error('Enter at least one score.');
-    const changed=games.some(game=>{
+    const clears=games.some(game=>game.clear);
+    const changed=clears||games.some(game=>{
       const old=session.games.find(score=>score.profile_id===game.profileId&&score.game_number===game.gameNumber);
       return old&&(Boolean(old.is_blind)!==Boolean(game.blind)||(!game.blind&&old.scratch!==game.scratch));
     });
-    const reason=changed?localizedPrompt('Reason for correcting the saved score:','Score correction'):'';
+    const reason=changed?localizedPrompt(clears?'Blank boxes will remove those saved scores. Enter a reason to confirm.':'Reason for correcting the saved score:',clears?'':'Score correction'):'';
     if(changed&&!reason)return;
     const selected=$('match-selector').value;
     await api('/league/scores','POST',sessionBody({games,reason,...(teamBonuses.length?{teamBonuses}:{})}));
