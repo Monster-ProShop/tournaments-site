@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <script src="league-i18n.js?v=roster-standings"></script>
+    <script src="league-i18n.js?v=played-sessions"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tournaments by ProDrillOS</title>
@@ -94,7 +94,7 @@
         ::-webkit-scrollbar-thumb { background: var(--gold-dim); border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: var(--gold); }
     </style>
-    <link rel="stylesheet" href="brand.css?v=roster-standings">
+    <link rel="stylesheet" href="brand.css?v=played-sessions">
 </head>
 <body>
 
@@ -138,6 +138,9 @@
   <div id="bowler-league-overview" class="hidden"></div>
   <div id="bowler-claim" class="hidden cloud-form"><label>Your bowler profile<select id="claim-profile"></select></label><button id="claim-bowler">Confirm my bowler profile</button></div>
   <div id="weekly-admin-overview" class="hidden"><div class="action-row"><label>Bowling session<select id="session-select"><option value="">Choose a session</option></select></label><button id="refresh-session">Refresh scores</button></div><p id="session-status" class="hint"></p></div>
+  <section id="played-league-sessions" class="hidden" aria-labelledby="played-sessions-title">
+    <h3 id="played-sessions-title">Played sessions</h3><div id="played-session-list"></div>
+  </section>
  </section>
  <div class="action-row hidden" id="league-export-actions"><button id="export-league-standings">Export current standings</button><button id="export-weekly-results">Export weekly results</button></div>
  <section id="league-team-standings" class="league-view hidden"><h3>Team Standings</h3><div id="team-standings"></div></section>
@@ -700,7 +703,7 @@ window.TournamentManager = {
     };
 </script>
 <script src="portal-config.js?v=20261009-8"></script>
-<script type="module" src="cloud.js?v=roster-standings"></script>
+<script type="module" src="cloud.js?v=played-sessions"></script>
 </body>
 </html>
 

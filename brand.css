@@ -3,6 +3,16 @@
 #bowler-league-overview { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; align-items: start; }
 .bowler-overview-card { min-width: 0; padding: 16px; border: 1px solid var(--gold-dim); border-radius: 12px; }
 .bowler-overview-next { grid-column: 1 / -1; }
+#played-league-sessions { margin-top: 24px; }
+.played-league-session { margin: 10px 0; padding: 12px; border: 1px solid var(--gold-dim); border-radius: 10px; }
+.played-league-session summary { cursor: pointer; color: var(--gold-light); }
+.played-league-session summary:focus-visible { outline: 2px solid var(--gold-light); outline-offset: 3px; }
+.played-league-session summary time { float: right; color: var(--text-muted); font-size: .9em; }
+.played-league-session .match-result-card:last-child { margin-bottom: 0; }
+.played-league-session .match-result-card > header { flex-wrap: wrap; }
+.played-league-session .match-result-grid { min-width: 0; }
+.played-league-session .match-result-grid th, .played-league-session .match-result-grid td { padding: 6px 4px; }
+.played-league-session .result-badge { min-width: 0; }
 .bowler-overview-heading { display: flex; align-items: start; justify-content: space-between; gap: 12px; }
 .bowler-overview-heading h3 { overflow-wrap: anywhere; margin: 3px 0 0; }
 .bowler-overview-place { display: grid; text-align: right; gap: 3px; font-size: 12px; flex-shrink: 0; }

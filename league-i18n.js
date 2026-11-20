@@ -58,6 +58,8 @@
     'Your team':'Tu equipo','No team assigned':'Sin equipo asignado','League place':'Lugar en la liga','Division':'División','Points':'Puntos',
     'Team game average + HCP':'Promedio por juego del equipo con hándicap','Team roster':'Jugadores del equipo',
     'Not ranked':'Sin posición',
+    'Played sessions':'Jornadas jugadas','No played sessions yet.':'Aún no hay jornadas jugadas.',
+    'No team matchup scores are available for this session.':'Aún no hay resultados de enfrentamientos para esta jornada.',
     'Next matchup':'Próximo enfrentamiento','Opponent':'Equipo rival','Opponent pending':'Rival por definir',
     'Your starting lane':'Tu pista inicial','Opponent starting lane':'Pista inicial del rival','Opponent roster':'Jugadores del equipo rival',
     'Provisional position-round matchup':'Enfrentamiento provisional de ronda de posición',
