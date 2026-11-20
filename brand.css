@@ -2,6 +2,7 @@
 :root { color-scheme: dark; --gold-gradient: linear-gradient(115deg, #9c681e 0%, #e8ba4f 22%, #fff0b4 40%, #dca637 56%, #f7dc85 76%, #b37c23 100%); }
 #bowler-league-overview { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; align-items: start; }
 .bowler-overview-card { min-width: 0; padding: 16px; border: 1px solid var(--gold-dim); border-radius: 12px; }
+.bowler-overview-next { grid-column: 1 / -1; }
 .bowler-overview-heading { display: flex; align-items: start; justify-content: space-between; gap: 12px; }
 .bowler-overview-heading h3 { overflow-wrap: anywhere; margin: 3px 0 0; }
 .bowler-overview-place { display: grid; text-align: right; gap: 3px; font-size: 12px; flex-shrink: 0; }
@@ -18,6 +19,14 @@
 .bowler-overview-list { list-style: none; margin: 8px 0 0; padding: 0; font-size: 13px; }
 .bowler-overview-list li { display: flex; justify-content: space-between; gap: 8px; padding: 5px 0; }
 .bowler-overview-list li span:last-child { text-align: right; }
+.bowler-roster-standings { width: 100%; margin-top: 8px; border-collapse: collapse; table-layout: fixed; font-size: 13px; }
+.bowler-roster-standings th, .bowler-roster-standings td { padding: 7px 4px; text-align: left; overflow-wrap: anywhere; }
+.bowler-roster-standings thead { color: var(--gold-light); }
+.bowler-roster-standings th:first-child { width: 45%; padding-left: 0; }
+.bowler-roster-standings th:last-child, .bowler-roster-standings td:last-child { text-align: right; padding-right: 0; }
+.bowler-roster-standings tbody tr { border-top: 1px solid var(--gold-dim); }
+.bowler-roster-standings tbody th { font-weight: 500; }
+.bowler-roster-standings small { display: block; margin-top: 2px; color: var(--text-dim, #beb6a6); }
 #bowler-league-overview.hidden, #league-stat-grid.hidden { display: none; }
 @media (max-width: 680px) { #bowler-league-overview { grid-template-columns: 1fr; } }
 * { box-sizing: border-box; }

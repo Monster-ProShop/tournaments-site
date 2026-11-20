@@ -57,6 +57,11 @@
   Object.assign(es,{
     'Your team':'Tu equipo','No team assigned':'Sin equipo asignado','League place':'Lugar en la liga','Division':'División','Points':'Puntos',
     'Team game average + HCP':'Promedio por juego del equipo con hándicap','Team roster':'Jugadores del equipo',
+    'Not ranked':'Sin posición',
+    'Next matchup':'Próximo enfrentamiento','Opponent':'Equipo rival','Opponent pending':'Rival por definir',
+    'Your starting lane':'Tu pista inicial','Opponent starting lane':'Pista inicial del rival','Opponent roster':'Jugadores del equipo rival',
+    'Provisional position-round matchup':'Enfrentamiento provisional de ronda de posición',
+    'No upcoming matchup is scheduled.':'No hay un próximo enfrentamiento programado.',
     'Your bowling':'Tus estadísticas','Scratch average':'Promedio sin hándicap','scratch average':'de promedio sin hándicap',
     'Best lane pair':'Mejor par de pistas','Game played':'juego jugado','Games bowled':'juegos jugados',
     'More bowling stats':'Más estadísticas','Lane pair averages':'Promedios por par de pistas',

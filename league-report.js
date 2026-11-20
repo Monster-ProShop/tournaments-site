@@ -10,18 +10,21 @@ export const teamStandings=rows=>grouped(rows,['Place','Team','Games Played','Ga
 function renderBowlerStandings(rows,compact=false){
   const headers=compact?['Pl.','Bowler','Team','G','Avg','HCP','HG','HS','Pins']:
     ['Place','Bowler','Team','Games','Average','HCP','High Game + HCP','High Series + HCP','Total Pinfall + HCP'];
-  return grouped(rows,headers,(r,i)=>[r.printPlace??i+1,r.name,r.team,r.games,r.average,r.handicap,r.high_game_handicap,r.high_series_handicap,r.handicapPinfall]);
+  return grouped(rows,headers,r=>[r.place,r.name,r.team,r.games,r.average,r.handicap,r.high_game_handicap,r.high_series_handicap,r.handicapPinfall]);
 }
-export const bowlerStandings=rows=>renderBowlerStandings(rows);
+export const bowlerStandings=rows=>renderBowlerStandings(rankBowlers(rows));
 export const honorTable=rows=>rows.length?table(['Bowler','Session','Date','Honor','Game','Scratch'],rows.map(r=>[r.name,r.session,r.date,tr(r.type),r.game??'—',r.score])):`<p>${esc(tr('No 300 games or 800+ scratch series yet.'))}</p>`;
 export const pointsNote='Games Played = possible points from scored matchups; Games Won = points earned; Games Lost = possible points minus points earned. Ties retain fractional points.';
-function printBowlerColumns(rows){
+export function rankBowlers(rows){
   const places=new Map();
-  const ranked=rows.map(row=>{
+  return rows.map(row=>{
     const key=row.division||'',place=(places.get(key)||0)+1;
     places.set(key,place);
-    return {...row,printPlace:place};
+    return {...row,place};
   });
+}
+function printBowlerColumns(rows){
+  const ranked=rankBowlers(rows);
   const split=Math.ceil(ranked.length/2);
   return `<div class="columns"><div>${renderBowlerStandings(ranked.slice(0,split),true)}</div>${ranked.length>1?`<div>${renderBowlerStandings(ranked.slice(split),true)}</div>`:''}</div>`;
 }

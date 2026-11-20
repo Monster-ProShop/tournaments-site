@@ -1,4 +1,4 @@
-import { teamStandings, bowlerStandings, honorTable, pointsNote, reportHTML, prepareReport } from './league-report.js?v=20261119-print-width';
+import { teamStandings, bowlerStandings, rankBowlers, honorTable, pointsNote, reportHTML, prepareReport } from './league-report.js?v=roster-standings';
 import { createAuthClient } from 'https://esm.sh/@neondatabase/auth@0.5.0-beta?bundle';
 
 const $=id=>document.getElementById(id);
@@ -126,7 +126,7 @@ function renderBowlerOverview(){
   panel.innerHTML='';
   if(!personal)return;
 
-  const {profile,bowler,team,lanePairs}=personal;
+  const {profile,bowler,team,lanePairs,nextMatch}=personal;
   const number=new Intl.NumberFormat(window.LeagueI18n.language==='es'?'es-MX':'en-US',{maximumFractionDigits:2});
   const format=value=>value==null?'—':number.format(value);
   const label=value=>esc(t(value));
@@ -135,14 +135,44 @@ function renderBowlerOverview(){
   const best=lanePairs[0];
   const pairName=pair=>`${pair.first}/${pair.last}`;
   const gamesLabel=count=>`${format(count)} ${label(count===1?'Game played':'Games bowled')}`;
+  const currentTeam=leagueTeams.find(entry=>entry.players.some(player=>player.profileId===profile.id));
+  const standings=new Map(rankBowlers(leagueReport.bowlers).map(row=>[row.id,row]));
+  const rosterDetails=(name,players)=>{
+    if(!players?.length)return '';
+    const rows=players.map(player=>{
+      const standing=standings.get(player.profileId);
+      const division=standing?.division ?? player.division;
+      return `<tr><th scope="row" translate="no">${esc(player.name)}</th>
+        <td>${standing?`#${format(standing.place)}`:label('Not ranked')}
+          <small>${division?`<span translate="no">${esc(division)}</span>`:label('No division')}</small></td>
+        <td>${format(standing?.average)}</td></tr>`;
+    }).join('');
+    return details(name,`<table class="bowler-roster-standings"><thead><tr>
+      <th scope="col">${label('Bowler')}</th><th scope="col">${label('Place')}</th><th scope="col">${label('Scratch average')}</th>
+      </tr></thead><tbody>${rows}</tbody></table>`);
+  };
+  const opponent=leagueTeams.find(entry=>entry.id===nextMatch?.opponentTeamId);
+  const matchup=nextMatch?`
+    <p class="hint">${label(nextMatch.label)} · <time datetime="${esc(nextMatch.date)}">${esc(nextMatch.date)}</time></p>
+    <div class="bowler-overview-heading"><div><span class="hint">${label('Opponent')}</span>
+      <h3 translate="no">${nextMatch.opponentName?esc(nextMatch.opponentName):label('Opponent pending')}</h3></div></div>
+    <dl class="bowler-overview-metrics">${metric('Your starting lane',nextMatch.lane)}
+      ${metric('Opponent starting lane',nextMatch.opponentLane)}</dl>
+    ${nextMatch.provisional?`<p class="hint">${label('Provisional position-round matchup')}</p>`:''}
+    ${rosterDetails('Opponent roster',opponent?.players)}`
+    :`<p class="hint">${label('No upcoming matchup is scheduled.')}</p>`;
 
-  panel.innerHTML=`<section class="bowler-overview-card">
+  panel.innerHTML=`${team?`<section class="bowler-overview-card bowler-overview-next">
+    <span class="eyebrow">${label('Next matchup')}</span>
+    ${matchup}
+  </section>`:''}
+  <section class="bowler-overview-card">
     <div class="bowler-overview-heading"><div><span class="eyebrow">${label('Your team')}</span>
     <h3 translate="no">${team?esc(team.name):label('No team assigned')}</h3></div>
     ${team?`<div class="bowler-overview-place"><strong>#${format(team.place)}</strong><span>${team.division?`${label('Division')} <span translate="no">${esc(team.division)}</span>`:label('League place')}</span></div>`:''}</div>
     ${team?`<dl class="bowler-overview-metrics">${metric('Points',team.points)}${metric('Team game average + HCP',team.average)}
       ${metric('High HCP game',team.highGame)}${metric('High HCP series',team.highSeries)}</dl>
-      ${details('Team roster',`<ul class="bowler-overview-list">${team.roster.map(player=>`<li><span translate="no">${esc(player.name)}</span><span>${label(player.role==='substitute'?'Substitute':'Active')}</span></li>`).join('')}</ul>`)}`:''}
+      ${rosterDetails('Team roster',currentTeam?.players)}`:''}
   </section>
   <section class="bowler-overview-card">
     <div class="bowler-overview-heading"><div><span class="eyebrow">${label('Your bowling')}</span><h3 translate="no">${esc(profile.name)}</h3></div>
