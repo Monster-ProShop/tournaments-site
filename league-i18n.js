@@ -56,6 +56,9 @@
   });
   let language='en';try{language=localStorage.getItem('prodrillos-language')==='es'?'es':'en';}catch{}
   es.Place='Lugar';
+  Object.assign(es,{'Pl.':'Lug.','G':'J','Avg':'Prom.','HG':'JA','HS':'SA','Pins':'Pinos',
+    'Pl. = place · G = games · Avg = scratch average · HG = high game · HS = high series. HG, HS and Pins include handicap.':
+      'Lug. = lugar · J = juegos · Prom. = promedio sin hándicap · JA = juego alto · SA = serie alta. JA, SA y Pinos incluyen hándicap.'});
   Object.assign(es,{'Blank boxes will remove those saved scores. Enter a reason to confirm.':'Las casillas vacías eliminarán esos resultados guardados. Escribe el motivo para confirmar.',
     'Choose each score only once':'Selecciona cada resultado una sola vez',
     'Choose either a corrected score or clear the saved score':'Captura un resultado corregido o borra el resultado guardado',
