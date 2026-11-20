@@ -54,6 +54,16 @@
     'Select lane pair and match:':'Selecciona el par de pistas y el enfrentamiento:','The two-team score sheet will appear after a lane pair is selected.':'La hoja de anotación de ambos equipos aparecerá al seleccionar un par de pistas.',
     'League':'Liga','Session':'Jornada','Lane':'Pista','Bowlers':'Jugadores','Scratch subtotal':'Subtotal sin hándicap','Handicap':'Hándicap','Total with handicap':'Total con hándicap','Result':'Resultado','Pending':'Pendiente','Substitute':'Suplente','Won':'Ganado','Lost':'Perdido','Tie':'Empate','WIN':'GANÓ','LOSS':'PERDIÓ','TIE':'EMPATE','Series + HCP':'Serie + HCP','Team handicap':'Hándicap del equipo','Team total + HCP':'Total del equipo + HCP','Result / points':'Resultado / puntos','Match points':'Puntos del enfrentamiento'
   });
+  Object.assign(es,{
+    'Your team':'Tu equipo','No team assigned':'Sin equipo asignado','League place':'Lugar en la liga','Division':'División','Points':'Puntos',
+    'Team game average + HCP':'Promedio por juego del equipo con hándicap','Team roster':'Jugadores del equipo',
+    'Your bowling':'Tus estadísticas','Scratch average':'Promedio sin hándicap','scratch average':'de promedio sin hándicap',
+    'Best lane pair':'Mejor par de pistas','Game played':'juego jugado','Games bowled':'juegos jugados',
+    'More bowling stats':'Más estadísticas','Lane pair averages':'Promedios por par de pistas',
+    'Lane averages use scratch scores from saved matches with lane assignments.':'Los promedios por par de pistas se calculan con los juegos sin hándicap de los enfrentamientos guardados con pistas asignadas.',
+    'Your stats will appear after your first scored game.':'Tus estadísticas aparecerán cuando se registre tu primer juego.',
+    'The bowler email must match your verified login. Ask your manager to correct the roster.':'El correo del jugador debe coincidir con el de tu cuenta verificada. Pídele al administrador que actualice el registro.'
+  });
   let language='en';try{language=localStorage.getItem('prodrillos-language')==='es'?'es':'en';}catch{}
   es.Place='Lugar';
   Object.assign(es,{'Pl.':'Lug.','G':'J','Avg':'Prom.','HG':'JA','HS':'SA','Pins':'Pinos',

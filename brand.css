@@ -1,5 +1,25 @@
 /* Tournaments by ProDrillOS: polished gold, warm ivory and black. */
 :root { color-scheme: dark; --gold-gradient: linear-gradient(115deg, #9c681e 0%, #e8ba4f 22%, #fff0b4 40%, #dca637 56%, #f7dc85 76%, #b37c23 100%); }
+#bowler-league-overview { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; align-items: start; }
+.bowler-overview-card { min-width: 0; padding: 16px; border: 1px solid var(--gold-dim); border-radius: 12px; }
+.bowler-overview-heading { display: flex; align-items: start; justify-content: space-between; gap: 12px; }
+.bowler-overview-heading h3 { overflow-wrap: anywhere; margin: 3px 0 0; }
+.bowler-overview-place { display: grid; text-align: right; gap: 3px; font-size: 12px; flex-shrink: 0; }
+.bowler-overview-place strong { color: var(--gold-light); font-size: 22px; }
+.bowler-overview-metrics { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 14px 0; }
+.bowler-overview-metrics dt { color: var(--text-muted, #beb6a6); font-size: 12px; }
+.bowler-overview-metrics dd { margin: 2px 0 0; color: var(--gold-light); font-weight: 800; font-size: 18px; }
+.bowler-overview-best { display: grid; gap: 4px; margin: 12px 0; padding: 10px 12px; background: #e8ba4f12; border-radius: 8px; font-size: 13px; }
+.bowler-overview-best strong, .bowler-overview-card summary { color: var(--gold-light); }
+.bowler-overview-card details { border-top: 1px solid var(--gold-dim); padding: 10px 0; }
+.bowler-overview-card details:last-child { padding-bottom: 0; }
+.bowler-overview-card summary { cursor: pointer; }
+.bowler-overview-card summary:focus-visible { outline: 2px solid var(--gold-light); outline-offset: 2px; }
+.bowler-overview-list { list-style: none; margin: 8px 0 0; padding: 0; font-size: 13px; }
+.bowler-overview-list li { display: flex; justify-content: space-between; gap: 8px; padding: 5px 0; }
+.bowler-overview-list li span:last-child { text-align: right; }
+#bowler-league-overview.hidden, #league-stat-grid.hidden { display: none; }
+@media (max-width: 680px) { #bowler-league-overview { grid-template-columns: 1fr; } }
 * { box-sizing: border-box; }
 body { line-height: 1.5; background-attachment: fixed; }
 header { padding: 18px max(24px, calc((100vw - 1120px) / 2)); gap: 24px; }

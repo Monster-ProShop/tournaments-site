@@ -91,13 +91,13 @@ async function loadRoster(){
   roster=await api('/league/roster'+query());
   const eligible=roster.filter(p=>p.eligible);
   $('claim-profile').innerHTML='<option value="">Choose your bowler name</option>'+eligible.map(p=>`<option value="${esc(p.id)}">${esc(p.name)}${p.linkedToMe?' · Linked':''}</option>`).join('');
-  $('bowler-claim').classList.toggle('hidden',manager());
 }
 async function openCompetition(row){
-  competition=row;session=null;dirty=false;
+  competition=row;session=null;leagueReport=null;dirty=false;
   $('competition-panel').classList.add('hidden');$('session-panel').classList.remove('hidden');$('tournament-workspace').classList.add('hidden');
   $('competition-name').textContent=row.name;$('competition-location').textContent=[row.bowling_center,row.city,row.region,row.country].filter(Boolean).join(' · ');
   $('weekly-admin-overview').classList.toggle('hidden',!manager());
+  renderBowlerOverview();
   showLeagueView('league-home');
   $('league-export-actions').classList.toggle('hidden',!manager());
   await loadRoster();await loadConfiguration();await loadTeams();await listSessions();await loadSummary();await loadFinances();
@@ -115,8 +115,56 @@ function renderLeagueReport(){
   $('team-standings').innerHTML=teamStandings(leagueReport.teams)+'<p class="hint">'+esc(t(pointsNote))+'</p>';
   $('bowler-standings').innerHTML=bowlerStandings(leagueReport.bowlers);
   $('honor-scores').innerHTML=honorTable(leagueReport.honorScores);
+  renderBowlerOverview();
 }
-async function loadSummary(){leagueReport=await api('/league/report'+query());renderLeagueReport();}
+function renderBowlerOverview(){
+  const personal=manager()?null:leagueReport?.personal;
+  const panel=$('bowler-league-overview');
+  panel.classList.toggle('hidden',!personal);
+  $('league-stat-grid').classList.toggle('hidden',!!personal);
+  $('bowler-claim').classList.toggle('hidden',manager()||!leagueReport||!!personal);
+  panel.innerHTML='';
+  if(!personal)return;
+
+  const {profile,bowler,team,lanePairs}=personal;
+  const number=new Intl.NumberFormat(window.LeagueI18n.language==='es'?'es-MX':'en-US',{maximumFractionDigits:2});
+  const format=value=>value==null?'—':number.format(value);
+  const label=value=>esc(t(value));
+  const metric=(name,value)=>`<div><dt>${label(name)}</dt><dd>${format(value)}</dd></div>`;
+  const details=(name,body)=>`<details><summary>${label(name)}</summary>${body}</details>`;
+  const best=lanePairs[0];
+  const pairName=pair=>`${pair.first}/${pair.last}`;
+  const gamesLabel=count=>`${format(count)} ${label(count===1?'Game played':'Games bowled')}`;
+
+  panel.innerHTML=`<section class="bowler-overview-card">
+    <div class="bowler-overview-heading"><div><span class="eyebrow">${label('Your team')}</span>
+    <h3 translate="no">${team?esc(team.name):label('No team assigned')}</h3></div>
+    ${team?`<div class="bowler-overview-place"><strong>#${format(team.place)}</strong><span>${team.division?`${label('Division')} <span translate="no">${esc(team.division)}</span>`:label('League place')}</span></div>`:''}</div>
+    ${team?`<dl class="bowler-overview-metrics">${metric('Points',team.points)}${metric('Team game average + HCP',team.average)}
+      ${metric('High HCP game',team.highGame)}${metric('High HCP series',team.highSeries)}</dl>
+      ${details('Team roster',`<ul class="bowler-overview-list">${team.roster.map(player=>`<li><span translate="no">${esc(player.name)}</span><span>${label(player.role==='substitute'?'Substitute':'Active')}</span></li>`).join('')}</ul>`)}`:''}
+  </section>
+  <section class="bowler-overview-card">
+    <div class="bowler-overview-heading"><div><span class="eyebrow">${label('Your bowling')}</span><h3 translate="no">${esc(profile.name)}</h3></div>
+    ${bowler?`<span class="hint">${gamesLabel(bowler.games)}</span>`:''}</div>
+    ${bowler?`<dl class="bowler-overview-metrics">${metric('Scratch average',bowler.average)}
+      ${metric('High HCP game',bowler.high_game_handicap)}${metric('High HCP series',bowler.high_series_handicap)}</dl>
+      ${best?`<p class="bowler-overview-best"><strong>${label('Best lane pair')} · ${pairName(best)}</strong>
+        <span>${format(best.average)} ${label('scratch average')} · ${gamesLabel(best.games)}</span></p>`:''}
+      ${details('More bowling stats',`<dl class="bowler-overview-metrics">${metric('High scratch game',bowler.high_game)}
+        ${metric('High scratch series',bowler.high_series)}${metric('Scratch pins',bowler.pinfall)}</dl>`)}
+      ${lanePairs.length?details('Lane pair averages',`<ul class="bowler-overview-list">${lanePairs.map(pair=>`<li><span>${label('Lanes')} ${pairName(pair)}</span><span>${format(pair.average)} · ${gamesLabel(pair.games)}</span></li>`).join('')}</ul>
+      <p class="hint">${label('Lane averages use scratch scores from saved matches with lane assignments.')}</p>`):''}`
+      :`<p class="hint">${label('Your stats will appear after your first scored game.')}</p>`}
+  </section>`;
+}
+async function loadSummary(){
+  const id=competition.id,isManager=manager();
+  const report=await api('/league/report'+query()+(isManager?'':'&personal=1'));
+  if(competition?.id!==id||manager()!==isManager)return;
+  leagueReport=report;
+  renderLeagueReport();
+}
 async function exportLeagueReport(weekly=false){
   if(!manager())throw Error('Open a league you manage first.');
   if(weekly&&!session)throw Error('Choose a session for weekly results.');
@@ -420,7 +468,7 @@ $('edit-profile').onsubmit=run(async event=>{
   await loadSummary();
   notice('Bowler name updated.');
 });
-$('claim-bowler').onclick=run(async()=>{const profile=roster.find(p=>p.id===$('claim-profile').value);if(!profile)throw Error('Choose your bowler name.');if(!localizedConfirm('Confirm that you are '+profile.name+'.'))return;await api('/roster/claim','POST',{competitionId:competition.id,profileId:profile.id,confirm:true});await loadRoster();notice('Your verified account is linked to this bowler.');});
+$('claim-bowler').onclick=run(async()=>{const profile=roster.find(p=>p.eligible&&p.id===$('claim-profile').value);if(!profile)throw Error('Choose your bowler name.');if(!localizedConfirm('Confirm that you are '+profile.name+'.'))return;await api('/league/claim','POST',{competitionId:competition.id,profileId:profile.id,confirm:true});await loadRoster();await loadSummary();notice('Your verified account is linked to this bowler.');});
 $('session-select').onchange=run(async event=>{if(event.target.value)await openSession(event.target.value);else $('tournament-workspace').classList.add('hidden');});
 $('export-league-standings').onclick=run(()=>exportLeagueReport());
 $('export-weekly-results').onclick=run(()=>exportLeagueReport(true));

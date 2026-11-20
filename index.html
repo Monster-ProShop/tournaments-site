@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <script src="league-i18n.js?v=20261119-print-compact"></script>
+    <script src="league-i18n.js?v=20261119-bowler-overview"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tournaments by ProDrillOS</title>
@@ -94,7 +94,7 @@
         ::-webkit-scrollbar-thumb { background: var(--gold-dim); border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: var(--gold); }
     </style>
-    <link rel="stylesheet" href="brand.css?v=20261119-match-review">
+    <link rel="stylesheet" href="brand.css?v=20261119-bowler-overview">
 </head>
 <body>
 
@@ -133,7 +133,12 @@
 <section id="session-panel" class="container hidden">
  <div class="panel-heading"><div><p id="competition-location" class="eyebrow"></p><h2 id="competition-name"></h2></div><button id="back-competitions">All competitions</button></div>
  <div class="league-tabs" role="tablist"><button class="active" data-league-view="league-home">Overview</button><button data-league-view="league-team-standings">Team Standings</button><button data-league-view="league-bowler-standings">Bowler Standings</button><button data-league-view="league-honor-scores">Honor Scores</button><button data-league-view="league-calendar">Calendar</button><button data-league-view="league-finances">Finances</button><button id="league-teams-tab" data-league-view="league-teams">Teams & Rosters</button><button id="league-integrations-tab" data-league-view="league-integrations">Integrations</button><button id="league-setup-tab" data-league-view="league-setup">League Setup</button></div>
- <section id="league-home" class="league-view"><div class="stat-grid" id="league-stat-grid"></div><div id="weekly-admin-overview" class="hidden"><div class="action-row"><label>Bowling session<select id="session-select"><option value="">Choose a session</option></select></label><button id="refresh-session">Refresh scores</button></div><p id="session-status" class="hint"></p></div></section>
+ <section id="league-home" class="league-view">
+  <div class="stat-grid" id="league-stat-grid"></div>
+  <div id="bowler-league-overview" class="hidden"></div>
+  <div id="bowler-claim" class="hidden cloud-form"><label>Your bowler profile<select id="claim-profile"></select></label><button id="claim-bowler">Confirm my bowler profile</button></div>
+  <div id="weekly-admin-overview" class="hidden"><div class="action-row"><label>Bowling session<select id="session-select"><option value="">Choose a session</option></select></label><button id="refresh-session">Refresh scores</button></div><p id="session-status" class="hint"></p></div>
+ </section>
  <div class="action-row hidden" id="league-export-actions"><button id="export-league-standings">Export current standings</button><button id="export-weekly-results">Export weekly results</button></div>
  <section id="league-team-standings" class="league-view hidden"><h3>Team Standings</h3><div id="team-standings"></div></section>
  <section id="league-bowler-standings" class="league-view hidden"><h3>Bowler Standings</h3><div id="bowler-standings"></div></section>
@@ -167,7 +172,6 @@
    <div class="action-row"><button class="primary" type="submit">Save League Configuration</button><button id="generate-league-schedule" type="button">Regenerate Calendar</button></div>
   </form>
  </section>
- <div id="bowler-claim" class="hidden cloud-form"><label>Your bowler profile<select id="claim-profile"></select></label><button id="claim-bowler">Confirm my bowler profile</button></div>
  <div id="session-manager" class="hidden"><details><summary>Add or reschedule one session</summary><form id="create-session" class="cloud-form field-grid"><label>Session label<input name="label" placeholder="Week 1 · Evening" required maxlength="120"></label><label>Date<input name="date" type="date" required></label><button class="primary">Create session</button></form></details></div>
 </section>
 <div id="tournament-workspace" class="hidden">
@@ -696,7 +700,7 @@ window.TournamentManager = {
     };
 </script>
 <script src="portal-config.js?v=20261009-8"></script>
-<script type="module" src="cloud.js?v=20261119-print-width"></script>
+<script type="module" src="cloud.js?v=20261119-bowler-overview"></script>
 </body>
 </html>
 
