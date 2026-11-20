@@ -1,4 +1,4 @@
-import { teamStandings, bowlerStandings, honorTable, pointsNote, reportHTML, prepareReport } from './league-report.js?v=20261119-logo';
+import { teamStandings, bowlerStandings, honorTable, pointsNote, reportHTML, prepareReport } from './league-report.js?v=20261119-bowler-team';
 import { createAuthClient } from 'https://esm.sh/@neondatabase/auth@0.5.0-beta?bundle';
 
 const $=id=>document.getElementById(id);
@@ -409,7 +409,17 @@ $('cancel-new-bowler').onclick=closeNewBowler;
 $('cancel-edit-bowler').onclick=closeEditBowler;
 $('league-team-editor').addEventListener('click',event=>{const register=event.target.closest('[data-register-for-slot]'),edit=event.target.closest('[data-edit-bowler]'),select=event.target.closest('.roster-slot')?.querySelector('[data-player]');if(register)openNewBowler(select);if(edit)openEditBowler(select);});
 $('add-profile').onsubmit=run(async event=>{const target=newBowlerTarget,created=await api('/league/roster','POST',{competitionId:competition.id,name:new FormData(event.target).get('name')});roster.push({...created,active:created.active!==false});refreshRosterSelects();if(target){target.value=created.id;target.dispatchEvent(new Event('change',{bubbles:true}));}closeNewBowler();notice('Bowler created and ready for team assignment.');});
-$('edit-profile').onsubmit=run(async event=>{rememberTeamDraft();const updated=await api('/league/roster','PUT',{competitionId:competition.id,profileId:editingProfileId,name:new FormData(event.target).get('name')});const profile=roster.find(p=>p.id===updated.id);if(profile)Object.assign(profile,updated);for(const team of leagueTeams)for(const player of team.players||[])if(player.profileId===updated.id)player.name=updated.name;closeEditBowler();renderTeamEditor(currentTeamNumber);notice('Bowler name updated.');});
+$('edit-profile').onsubmit=run(async event=>{
+  rememberTeamDraft();
+  const updated=await api('/league/roster','PUT',{competitionId:competition.id,profileId:editingProfileId,name:new FormData(event.target).get('name')});
+  const profile=roster.find(p=>p.id===updated.id);
+  if(profile)Object.assign(profile,updated);
+  for(const team of leagueTeams)for(const player of team.players||[])if(player.profileId===updated.id)player.name=updated.name;
+  closeEditBowler();renderTeamEditor(currentTeamNumber);
+  if(session&&!dirty)await openSession(session.id);
+  await loadSummary();
+  notice('Bowler name updated.');
+});
 $('claim-bowler').onclick=run(async()=>{const profile=roster.find(p=>p.id===$('claim-profile').value);if(!profile)throw Error('Choose your bowler name.');if(!localizedConfirm('Confirm that you are '+profile.name+'.'))return;await api('/roster/claim','POST',{competitionId:competition.id,profileId:profile.id,confirm:true});await loadRoster();notice('Your verified account is linked to this bowler.');});
 $('session-select').onchange=run(async event=>{if(event.target.value)await openSession(event.target.value);else $('tournament-workspace').classList.add('hidden');});
 $('export-league-standings').onclick=run(()=>exportLeagueReport());
