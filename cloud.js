@@ -1,4 +1,4 @@
-import { teamStandings, bowlerStandings, honorTable, pointsNote, reportHTML, prepareReport } from './league-report.js?v=20261119-bowler-team';
+import { teamStandings, bowlerStandings, honorTable, pointsNote, reportHTML, prepareReport } from './league-report.js?v=20261119-places';
 import { createAuthClient } from 'https://esm.sh/@neondatabase/auth@0.5.0-beta?bundle';
 
 const $=id=>document.getElementById(id);

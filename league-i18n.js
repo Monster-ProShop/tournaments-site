@@ -55,6 +55,7 @@
     'League':'Liga','Session':'Jornada','Lane':'Pista','Bowlers':'Jugadores','Scratch subtotal':'Subtotal sin hándicap','Handicap':'Hándicap','Total with handicap':'Total con hándicap','Result':'Resultado','Pending':'Pendiente','Substitute':'Suplente','Won':'Ganado','Lost':'Perdido','Tie':'Empate','WIN':'GANÓ','LOSS':'PERDIÓ','TIE':'EMPATE','Series + HCP':'Serie + HCP','Team handicap':'Hándicap del equipo','Team total + HCP':'Total del equipo + HCP','Result / points':'Resultado / puntos','Match points':'Puntos del enfrentamiento'
   });
   let language='en';try{language=localStorage.getItem('prodrillos-language')==='es'?'es':'en';}catch{}
+  es.Place='Lugar';
   Object.assign(es,{'Blank boxes will remove those saved scores. Enter a reason to confirm.':'Las casillas vacías eliminarán esos resultados guardados. Escribe el motivo para confirmar.',
     'Choose each score only once':'Selecciona cada resultado una sola vez',
     'Choose either a corrected score or clear the saved score':'Captura un resultado corregido o borra el resultado guardado',
