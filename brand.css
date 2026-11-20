@@ -13,6 +13,15 @@
 .played-league-session .match-result-grid { min-width: 0; }
 .played-league-session .match-result-grid th, .played-league-session .match-result-grid td { padding: 6px 4px; }
 .played-league-session .result-badge { min-width: 0; }
+@media (max-width: 600px) {
+  .played-league-session .match-result-grid:not(:has(thead th:nth-child(8))) { table-layout: fixed; }
+  .played-league-session .match-result-grid { font-size: 11px; line-height: 1.25; }
+  .played-league-session .match-result-grid th, .played-league-session .match-result-grid td { padding: 5px 2px; overflow-wrap: anywhere; }
+  .played-league-session .match-result-grid th:first-child { width: 21%; }
+  .played-league-session .match-result-grid td > strong { font-size: 13px; }
+  .played-league-session .match-points { font-size: 15px; }
+  .played-league-session .result-badge { display: inline-block; box-sizing: border-box; max-width: 100%; padding: 3px 2px; font-size: 8px; }
+}
 .bowler-overview-heading { display: flex; align-items: start; justify-content: space-between; gap: 12px; }
 .bowler-overview-heading h3 { overflow-wrap: anywhere; margin: 3px 0 0; }
 .bowler-overview-place { display: grid; text-align: right; gap: 3px; font-size: 12px; flex-shrink: 0; }
