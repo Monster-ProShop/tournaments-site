@@ -64,7 +64,8 @@ export function reportHTML(report,competition,leagueLogo){
     header .league-report-logo{width:72px;height:45px;margin-left:auto;flex-shrink:0}
     .report-layout{display:grid;align-items:start;gap:12px}
     .front-layout{grid-template-columns:minmax(0,1.9fr) minmax(0,1fr)}
-    .back-layout{grid-template-columns:minmax(0,3.2fr) minmax(0,1fr)}
+    .sheet-back{padding-right:.28in}.sheet-back .footer{right:.28in}
+    .back-layout{grid-template-columns:minmax(0,3.5fr) minmax(0,1fr)}
     .report-sidebar{min-width:0;border-left:1px solid #d7c9a9;padding-left:10px}
     .team-results th:first-child{width:8%}.team-results th:nth-child(2){width:22%;text-align:left}.team-results td:nth-child(2){text-align:left}
     .report-sidebar th,.report-sidebar td{padding:3px 2px}
@@ -85,7 +86,7 @@ export function reportHTML(report,competition,leagueLogo){
     @page{size:letter portrait;margin:0}@media print{body{background:white}.toolbar{display:none}.sheet{margin:0;break-after:page;overflow:hidden}.viewport{overflow:hidden}.sheet:last-child{break-after:auto}body.overfull .sheet{display:none}body.overfull .toolbar{display:block}body.overfull .toolbar button{display:none}*{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
     </style></head><body><div class="toolbar"><button id="print">${t('Print / Save PDF')}</button><p>${t('US letter · two pages · print double-sided, flip on long edge. Disable browser headers and footers.')}</p><p id="overflow" hidden>${t('This league exceeds two readable pages. No rows were omitted. Reduce the report scope before printing.')}</p></div>
     <article class="sheet"><div class="viewport"><div class="content">${header}${front}</div></div><footer class="footer"><span>Tournaments by ProDrillOS</span><span>1 / 2</span></footer></article>
-    <article class="sheet"><div class="viewport"><div class="content">${header}${back}</div></div><footer class="footer"><span>Tournaments by ProDrillOS</span><span>2 / 2</span></footer></article></body></html>`;
+    <article class="sheet sheet-back"><div class="viewport"><div class="content">${header}${back}</div></div><footer class="footer"><span>Tournaments by ProDrillOS</span><span>2 / 2</span></footer></article></body></html>`;
 }
 export async function prepareReport(preview){
   const doc=preview.document;
@@ -96,9 +97,30 @@ export async function prepareReport(preview){
   ])));
   let overflow=false;
   for(const content of doc.querySelectorAll('.content')){
-    content.style.transform='';content.style.width='';const available=content.parentElement.clientHeight;let scale=1;
-    for(let i=0;i<12;i++){scale=Math.min(1,available/content.scrollHeight);content.style.width=(100/scale)+'%';}
-    scale=Math.min(1,available/content.scrollHeight);content.style.transform=`scale(${scale})`;if(scale<.6)overflow=true;
+    content.style.transform='';
+    const available=content.parentElement.clientHeight;
+    const fits=scale=>{
+      content.style.width=`${100/scale}%`;
+      return content.scrollHeight*scale<=available;
+    };
+    let scale=1;
+    if(!fits(scale)){
+      const minimum=.6;
+      if(!fits(minimum)){
+        overflow=true;
+        scale=minimum;
+      }else{
+        let low=minimum,high=1;
+        for(let i=0;i<14;i++){
+          const candidate=(low+high)/2;
+          if(fits(candidate))low=candidate;else high=candidate;
+        }
+        scale=low;
+      }
+    }
+    // Apply the same scale and width used by the fitting check.
+    content.style.width=`${100/scale}%`;
+    content.style.transform=`scale(${scale})`;
   }
   doc.body.classList.toggle('overfull',overflow);doc.getElementById('overflow').hidden=!overflow;doc.getElementById('print').disabled=overflow;
   doc.getElementById('print').onclick=()=>preview.print();preview.reportReady=true;
