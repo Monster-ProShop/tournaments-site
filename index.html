@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <script src="league-i18n.js?v=played-sessions"></script>
+    <script src="league-i18n.js?v=weekly-team-audit"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tournaments by ProDrillOS</title>
@@ -94,7 +94,7 @@
         ::-webkit-scrollbar-thumb { background: var(--gold-dim); border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: var(--gold); }
     </style>
-    <link rel="stylesheet" href="brand.css?v=played-sessions-mobile">
+    <link rel="stylesheet" href="brand.css?v=weekly-team-audit">
 </head>
 <body>
 
@@ -142,7 +142,11 @@
     <h3 id="played-sessions-title">Played sessions</h3><div id="played-session-list"></div>
   </section>
  </section>
- <div class="action-row hidden" id="league-export-actions"><button id="export-league-standings">Export current standings</button><button id="export-weekly-results">Export weekly results</button></div>
+ <div class="action-row hidden" id="league-export-actions">
+  <button id="export-league-standings">Export current standings</button>
+  <label id="weekly-export-picker">Results session<select id="weekly-export-session"></select></label>
+  <button id="export-weekly-results" disabled>Export weekly results</button>
+ </div>
  <section id="league-team-standings" class="league-view hidden"><h3>Team Standings</h3><div id="team-standings"></div></section>
  <section id="league-bowler-standings" class="league-view hidden"><h3>Bowler Standings</h3><div id="bowler-standings"></div></section>
  <section id="league-honor-scores" class="league-view hidden"><h3>Honor Scores</h3><div id="honor-scores"></div></section>
@@ -703,7 +707,7 @@ window.TournamentManager = {
     };
 </script>
 <script src="portal-config.js?v=20261009-8"></script>
-<script type="module" src="cloud.js?v=played-sessions"></script>
+<script type="module" src="cloud.js?v=weekly-team-audit"></script>
 </body>
 </html>
 

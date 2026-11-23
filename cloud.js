@@ -1,4 +1,4 @@
-import { teamStandings, bowlerStandings, rankBowlers, honorTable, pointsNote, reportHTML, prepareReport } from './league-report.js?v=roster-standings';
+import { teamStandings, bowlerStandings, rankBowlers, honorTable, pointsNote, movementNote, reportHTML, prepareReport } from './league-report.js?v=weekly-team-audit';
 import { createAuthClient } from 'https://esm.sh/@neondatabase/auth@0.5.0-beta?bundle';
 
 const $=id=>document.getElementById(id);
@@ -108,7 +108,9 @@ async function openCompetition(row){
   });
   renderBowlerOverview();
   showLeagueView('league-home');
-  $('league-export-actions').classList.toggle('hidden',!manager());
+  $('league-export-actions').classList.add('hidden');
+  $('weekly-export-session').replaceChildren();
+  $('export-league-standings').classList.toggle('hidden',!manager());
   await loadRoster();await loadConfiguration();await loadTeams();
   if(manager())await listSessions();
   else renderLeagueStats();
@@ -126,7 +128,16 @@ async function listSessions(selected=session?.id){
   if(selected)$('session-select').value=selected;
 }
 function renderLeagueReport(){
-  $('team-standings').innerHTML=teamStandings(leagueReport.teams)+'<p class="hint">'+esc(t(pointsNote))+'</p>';
+  const sessions=leagueReport.weeklySessions||[];
+  const select=$('weekly-export-session'),selected=select.value;
+  select.innerHTML=sessions.map(week=>`<option value="${esc(week.id)}">${esc(t(week.label))} · ${esc(week.date)}</option>`).join('');
+  if(sessions.some(week=>week.id===selected))select.value=selected;
+  $('weekly-export-picker').classList.toggle('hidden',!sessions.length);
+  $('export-weekly-results').classList.toggle('hidden',!sessions.length);
+  $('export-weekly-results').disabled=!sessions.length;
+  $('league-export-actions').classList.toggle('hidden',!manager()&&!sessions.length);
+  $('team-standings').innerHTML=teamStandings(leagueReport.teams)+'<p class="hint">'+esc(t(pointsNote))+'</p>'+
+    (leagueReport.teams.some(team=>team.movement)?`<p class="hint">${esc(t(movementNote))}</p>`:'');
   $('bowler-standings').innerHTML=bowlerStandings(leagueReport.bowlers);
   $('honor-scores').innerHTML=honorTable(leagueReport.honorScores);
   renderBowlerOverview();
@@ -219,15 +230,16 @@ async function loadSummary(){
   renderLeagueReport();
 }
 async function exportLeagueReport(weekly=false){
-  if(!manager())throw Error('Open a league you manage first.');
-  if(weekly&&!session)throw Error('Choose a session for weekly results.');
+  if(!competition||(!weekly&&!manager()))throw Error('Open a league you manage first.');
+  const weekId=$('weekly-export-session').value;
+  if(weekly&&!weekId)throw Error('Choose a session for weekly results.');
   if(dirty)throw Error('Save your changes before exporting.');
   const preview=window.open('about:blank','_blank');
   if(!preview)throw Error('Allow pop-ups to open the export.');
   preview.document.body.textContent=t('Preparing report…');
   try {
-    const report=await api('/league/report'+query()+'&export=1'+(weekly?'&through_session_id='+encodeURIComponent(session.id):''));
-    preview.document.open();preview.document.write(reportHTML(report,competition,leagueConfiguration?.leagueLogo));preview.document.close();await prepareReport(preview);
+    const report=await api('/league/report'+query()+'&export=1'+(weekly?'&through_session_id='+encodeURIComponent(weekId):''));
+    preview.document.open();preview.document.write(reportHTML(report,competition,report.leagueLogo??leagueConfiguration?.leagueLogo));preview.document.close();await prepareReport(preview);
   }catch(error){preview.close();throw error;}
 }
 async function loadFinances(){const f=await api('/league/finances'+query()),money=v=>new Intl.NumberFormat(window.LeagueI18n.language==='es'?'es-MX':'en-US',{style:'currency',currency:'USD'}).format(Number(v||0));$('league-finance-summary').innerHTML=[['Active bowlers',f.activeBowlers],['Weekly gross',money(f.weeklyGross)],['Weekly sponsorship',money(f.weeklySponsored)],['Weekly due',money(f.weeklyDue)],['Season gross',money(f.seasonGross)],['Season sponsorship',money(f.seasonSponsored)],['Season due',money(f.seasonDue)],['Weekly lineage',money(f.lineagePerSession)],['Weekly prize fund',money(f.prizeFundPerSession)]].map(([l,v])=>`<div class="stat-card"><span class="hint">${l}</span><strong>${v}</strong></div>`).join('');}

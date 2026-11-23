@@ -1,12 +1,21 @@
 const esc=value=>String(value??'—').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const tr=value=>window.LeagueI18n?.t(value)||value;
-const table=(headers,rows)=>`<div class="table-scroll"><table class="score-grid"><thead><tr>${headers.map(h=>`<th>${esc(tr(h))}</th>`).join('')}</tr></thead><tbody>${rows.map(r=>`<tr>${r.map(v=>`<td translate="no">${esc(v)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
-function grouped(rows,headers,values){
+const table=(headers,rows,cell=esc)=>`<div class="table-scroll"><table class="score-grid"><thead><tr>${headers.map(h=>`<th>${esc(tr(h))}</th>`).join('')}</tr></thead><tbody>${rows.map(r=>`<tr>${r.map((v,i)=>`<td translate="no">${cell(v,i)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+function grouped(rows,headers,values,cell){
   if(!rows.length)return `<p>${esc(tr('No scores yet.'))}</p>`;
   const groups=new Map();for(const row of rows){const key=row.division||'';if(!groups.has(key))groups.set(key,[]);groups.get(key).push(row);}
-  return [...groups].map(([division,items])=>`${groups.size>1||division?`<h4 translate="no">${esc(division||tr('No division'))}</h4>`:''}${table(headers,items.map(values))}`).join('');
+  return [...groups].map(([division,items])=>`${groups.size>1||division?`<h4 translate="no">${esc(division||tr('No division'))}</h4>`:''}${table(headers,items.map(values),cell)}`).join('');
 }
-export const teamStandings=rows=>grouped(rows,['Place','Team','Games Played','Games Won','Games Lost','High Game + HCP','High Series + HCP','Total Pinfall + HCP'],(r,i)=>[i+1,r.name,r.played,r.wins,r.losses,r.highGame,r.highSeries,r.handicapPinfall]);
+export const teamStandings=rows=>grouped(rows,['Place','Team','Games Played','Games Won','Games Lost','High Game + HCP','High Series + HCP','Total Pinfall + HCP'],
+  (r,i)=>[{place:i+1,movement:r.movement},r.name,r.played,r.wins,r.losses,r.highGame,r.highSeries,r.handicapPinfall],
+  (value,index)=>{
+    if(index!==0)return esc(value);
+    const {place,movement}=value;
+    if(!movement)return esc(place);
+    const direction=movement>0?'up':'down',count=Math.abs(movement);
+    const label=`${tr(direction==='up'?'Places gained':'Places lost')} ${count}`;
+    return `<span class="standing-place">${place} <span class="standing-${direction}" role="img" aria-label="${esc(label)}" title="${esc(label)}">${movement>0?'▲':'▼'}${count}</span></span>`;
+  });
 function renderBowlerStandings(rows,compact=false){
   const headers=compact?['Pl.','Bowler','Team','G','Avg','HCP','HG','HS','Pins']:
     ['Place','Bowler','Team','Games','Average','HCP','High Game + HCP','High Series + HCP','Total Pinfall + HCP'];
@@ -15,6 +24,7 @@ function renderBowlerStandings(rows,compact=false){
 export const bowlerStandings=rows=>renderBowlerStandings(rankBowlers(rows));
 export const honorTable=rows=>rows.length?table(['Bowler','Session','Date','Honor','Game','Scratch'],rows.map(r=>[r.name,r.session,r.date,tr(r.type),r.game??'—',r.score])):`<p>${esc(tr('No 300 games or 800+ scratch series yet.'))}</p>`;
 export const pointsNote='Games Played = possible points from scored matchups; Games Won = points earned; Games Lost = possible points minus points earned. Ties retain fractional points.';
+export const movementNote='Arrows show places gained or lost since the previous scored session in the same division.';
 export function rankBowlers(rows){
   const places=new Map();
   return rows.map(row=>{
@@ -35,6 +45,18 @@ function printHonors(rows){
     <small>${esc(tr(row.type))}${row.game==null?'':` · ${esc(tr(`Game ${row.game}`))}`} · <span translate="no">${esc(row.session)} · ${esc(row.date)}</span></small>
   </li>`).join('')}</ul>`;
 }
+function printWeeklyAudit(matches){
+  if(!matches.length)return `<p>${esc(tr('No team matchup scores are available for this session.'))}</p>`;
+  const gameCount=Math.max(...matches.map(match=>match.teams[0].games.length));
+  const headers=['Lanes','Team',...Array.from({length:gameCount},(_,i)=>`Game ${i+1}`),
+    'Scratch series','Series + HCP','Bonus points','Match points'];
+  const rows=matches.flatMap(match=>match.teams.map(team=>[
+    `${match.laneA??'—'}/${match.laneB??'—'}`,team.name,
+    ...Array.from({length:gameCount},(_,i)=>team.games[i]?.total),
+    team.scratchSeries,team.series.total,team.bonusPoints,team.points
+  ]));
+  return `<div class="team-audit">${table(headers,rows)}</div><p class="note">${esc(tr('Game totals include handicap. Match points include bonuses.'))}</p>`;
+}
 function scheduleHTML(session){
   if(!session)return `<p>${esc(tr('All scheduled sessions are complete.'))}</p>`;
   const assignments=session.assignments.map(match=>{
@@ -54,14 +76,14 @@ export function reportHTML(report,competition,leagueLogo){
   const title=report.weekly?'Weekly results':'Current standings';
   const header=`<header><img src="${esc(new URL('assets/prodrillos-gold-mark-v2.png',location.href).href)}" alt="ProDrillOS"><div><strong>Tournaments by ProDrillOS</strong><h1 translate="no">${esc(competition.name)}</h1><p>${t(title)}${report.throughSession?` · <span translate="no">${esc(report.throughSession.label)} · ${esc(report.throughSession.date)}</span>`:''}</p></div>${logo?`<img class="league-report-logo" src="${esc(logo)}" alt="${t('League logo')}">`:''}</header>`;
   const section=(label,body)=>`<section><h2>${t(label)}</h2>${body}</section>`;
-  const teams=section('Team Standings',teamStandings(report.teams)+`<p class="note">${t(pointsNote)}</p>`);
+  const teams=section('Team Standings',teamStandings(report.teams)+`<p class="note">${t(pointsNote)}</p>${report.teams.some(team=>team.movement)?`<p class="note">${t(movementNote)}</p>`:''}`);
   const honorNote=`<p class="note">${t('Honor scores use scratch scores: every 300 game and every complete three-game series of at least 800. Team records require complete lineups; series records require all scheduled games.')}</p>`;
   const honors=section('League records',records)+section('Honor Scores',printHonors(report.honorScores)+honorNote);
-  const bowlers=section(report.weekly?'Weekly bowler results':'Bowler Standings',
-    printBowlerColumns(report.weekly?report.weekly.bowlers:report.bowlers));
-  const note=`<p class="note">${t('Pl. = place · G = games · Avg = scratch average · HG = high game · HS = high series. HG, HS and Pins include handicap.')}</p>`;
+  const secondPage=report.weekly
+    ?section('Weekly team score audit',printWeeklyAudit(report.weekly.matches||[]))
+    :section('Bowler Standings',printBowlerColumns(report.bowlers))+`<p class="note">${t('Pl. = place · G = games · Avg = scratch average · HG = high game · HS = high series. HG, HS and Pins include handicap.')}</p>`;
   const front=`<div class="report-layout front-layout"><div class="team-results">${teams}</div><aside class="report-sidebar">${honors}</aside></div>`;
-  const back=`<div class="report-layout back-layout"><div class="bowler-results">${bowlers}${note}</div><aside class="report-sidebar schedule">${section('Current session to be bowled',lanes)}</aside></div>`;
+  const back=`<div class="report-layout back-layout"><div class="bowler-results">${secondPage}</div><aside class="report-sidebar schedule">${section('Current session to be bowled',lanes)}</aside></div>`;
   return `<!doctype html><html lang="${window.LeagueI18n?.language==='es'?'es-MX':'en'}"><head><meta charset="utf-8"><title>${t(title)} · ${esc(competition.name)}</title><style>
     *{box-sizing:border-box}body{margin:0;background:#ddd;color:#191918;font:9pt Arial,sans-serif}header{display:flex;align-items:center;gap:16px;border-bottom:2px solid #b38b35;margin-bottom:12px;padding-bottom:10px}header img{width:70px;height:45px;object-fit:contain}header strong{color:#73551a;font-size:10pt}h1{font-size:18pt;margin:3px 0}h2{font-size:11pt;border-bottom:1px solid #b38b35;margin:10px 0 5px}h4{font-size:9pt;margin:7px 0 3px}p{margin:5px 0}table{width:100%;border-collapse:collapse;table-layout:fixed}th,td{padding:4px 3px;border-bottom:1px solid #ddd;text-align:right;overflow-wrap:anywhere}th{background:#f4ecd9;font-size:.9em;color:#493b20}th:first-child,td:first-child{text-align:left}section{margin-bottom:10px}.sheet{width:8.5in;height:11in;padding:.35in;background:white;margin:16px auto;position:relative}.viewport{height:9.95in;overflow:visible}.content{transform-origin:top left}.footer{position:absolute;bottom:.2in;left:.35in;right:.35in;border-top:1px solid #bbb;padding-top:4px;font-size:8pt;display:flex;justify-content:space-between}.note{font-size:8pt;color:#555}.toolbar{padding:16px;text-align:center}.toolbar button{padding:10px 18px}#overflow{color:#9b1520;font-weight:bold}.columns{columns:2;column-gap:16px}.columns tr{break-inside:avoid}.columns h4{break-after:avoid}
     header .league-report-logo{width:72px;height:45px;margin-left:auto;flex-shrink:0}
@@ -86,6 +108,10 @@ export function reportHTML(report,competition,leagueLogo){
     .columns th:nth-child(7),.columns th:nth-child(8){width:8%}.columns th:nth-child(9){width:10%}
     .columns td:nth-child(n+4){white-space:nowrap}
     .team-results tbody tr:nth-child(even),.columns tbody tr:nth-child(even){background:#f7f5ef}
+    .standing-place{white-space:nowrap}.standing-up{color:#176033}.standing-down{color:#9b2537}.standing-up,.standing-down{font-weight:bold}
+    .team-results th:first-child{width:11%}
+    .team-audit th,.team-audit td{padding:4px 2px}.team-audit th:nth-child(2){width:23%}
+    .team-audit td:nth-child(2),.team-audit th:nth-child(2){text-align:left}.team-audit tbody tr:nth-child(4n+1),.team-audit tbody tr:nth-child(4n+2){background:#f7f5ef}
     @page{size:letter portrait;margin:0}@media print{body{background:white}.toolbar{display:none}.sheet{margin:0;break-after:page;overflow:hidden}.viewport{overflow:hidden}.sheet:last-child{break-after:auto}body.overfull .sheet{display:none}body.overfull .toolbar{display:block}body.overfull .toolbar button{display:none}*{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
     </style></head><body><div class="toolbar"><button id="print">${t('Print / Save PDF')}</button><p>${t('US letter · two pages · print double-sided, flip on long edge. Disable browser headers and footers.')}</p><p id="overflow" hidden>${t('This league exceeds two readable pages. No rows were omitted. Reduce the report scope before printing.')}</p></div>
     <article class="sheet"><div class="viewport"><div class="content">${header}${front}</div></div><footer class="footer"><span>Tournaments by ProDrillOS</span><span>1 / 2</span></footer></article>
