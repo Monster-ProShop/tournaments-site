@@ -332,19 +332,17 @@ function renderStandings(){
   const gameColumns=Array.from({length:totalGames},(_,i)=>i+1);
   const byBowler=new Map();
   for(const game of session.games){
+    if(game.is_blind)continue;
     if(!byBowler.has(game.profile_id))byBowler.set(game.profile_id,new Map());
     byBowler.get(game.profile_id).set(Number(game.game_number),game);
   }
   const rows=session.state.teams.flatMap(team=>team.players.filter(player=>byBowler.has(player.profileId)).map(player=>{
     const games=byBowler.get(player.profileId);
-    const played=[...games.values()].filter(game=>!game.is_blind);
+    const played=[...games.values()];
     const scratch=played.reduce((total,game)=>total+Number(game.scratch),0);
     const handicaps=played.map(game=>playerSessionHandicap(player,game.game_number));
     const series=played.length===totalGames&&handicaps.every(hcp=>hcp!==null)?scratch+handicaps.reduce((a,b)=>a+b,0):'—';
-    return [player.name,team.name,...gameColumns.map(n=>{
-      const game=games.get(n);
-      return game?.is_blind?`B (${game.scratch})`:game?.scratch??'—';
-    }),played.length?scratch:'—',series];
+    return [player.name,team.name,...gameColumns.map(n=>games.get(n)?.scratch??'—'),scratch,series];
   }));
   $('results-display').innerHTML=rows.length?table(['Bowler','Team',...gameColumns.map(n=>`Game ${n}`),'Scratch pins','Series + HCP'],rows):`<p class="hint">${esc(t('No scores yet.'))}</p>`;
   let matches=$('match-results');if(!matches){matches=document.createElement('div');matches.id='match-results';$('page-matches').append(matches);}
