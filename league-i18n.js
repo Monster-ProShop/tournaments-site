@@ -64,7 +64,7 @@
     'Next Session':'Siguiente Sesión',
     'Higher Game with Hdcp':'Mayor juego con hándicap',
     'Higher series with handicap':'Mayor serie con hándicap',
-    'Scratch series':'Serie sin hándicap','Places gained':'Lugares ganados','Places lost':'Lugares perdidos',
+    'Places gained':'Lugares ganados','Places lost':'Lugares perdidos',
     'Arrows show places gained or lost since the previous scored session in the same division.':'Las flechas indican cuántos lugares subió o bajó cada equipo en su división desde la última jornada con resultados.',
     'Game totals include handicap. Match points include bonuses.':'Los totales por juego incluyen hándicap. Los puntos del enfrentamiento incluyen bonificaciones.',
     'No team matchup scores are available for this session.':'Aún no hay resultados de enfrentamientos para esta jornada.',

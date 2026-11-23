@@ -1,4 +1,4 @@
-import { teamStandings, bowlerStandings, rankBowlers, honorTable, pointsNote, movementNote, reportHTML, prepareReport } from './league-report.js?v=weekly-handicap-legend';
+import { teamStandings, bowlerStandings, rankBowlers, honorTable, pointsNote, movementNote, reportHTML, prepareReport } from './league-report.js?v=weekly-handicap-only';
 import { createAuthClient } from 'https://esm.sh/@neondatabase/auth@0.5.0-beta?bundle';
 
 const $=id=>document.getElementById(id);

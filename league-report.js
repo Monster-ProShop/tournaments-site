@@ -49,7 +49,7 @@ function printWeeklyAudit(matches){
   if(!matches.length)return `<p>${esc(tr('No team matchup scores are available for this session.'))}</p>`;
   const gameCount=Math.max(...matches.map(match=>match.teams[0].games.length));
   const headers=['Lanes','Team',...Array.from({length:gameCount},(_,i)=>`Game ${i+1}`),
-    'Scratch series','Series + HCP','Bonus points','Match points'];
+    'Series + HCP','Bonus points','Match points'];
   const scoreCell=(value,highlight)=>`<td translate="no">${highlight?`<strong class="${highlight}">${esc(value)}</strong>`:esc(value)}</td>`;
   const groups=matches.map(({laneA,laneB,teams})=>`<tbody class="audit-match">${teams.map((team,index)=>{
     const games=Array.from({length:gameCount},(_,i)=>{
@@ -58,7 +58,6 @@ function printWeeklyAudit(matches){
     }).join('');
     return `<tr>${index===0?`<th scope="rowgroup" rowspan="2" class="audit-lanes" translate="no">${esc(laneA)}/${esc(laneB)}</th>`:''}
       <th scope="row" class="audit-team" translate="no">${esc(team.name)}</th>${games}
-      ${scoreCell(team.scratchSeries)}
       ${scoreCell(team.series.total,team.series.kind==='win'?'audit-series':'')}
       <td>${esc(team.bonusPoints)}</td><td class="audit-points">${esc(team.points)}</td></tr>`;
   }).join('')}</tbody>`).join('');
