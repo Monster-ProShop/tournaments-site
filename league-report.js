@@ -52,20 +52,18 @@ function printWeeklyAudit(matches){
     'Scratch series','Series + HCP','Bonus points','Match points'];
   const scoreCell=(value,highlight)=>`<td translate="no">${highlight?`<strong class="${highlight}">${esc(value)}</strong>`:esc(value)}</td>`;
   const groups=matches.map(({laneA,laneB,teams})=>`<tbody class="audit-match">${teams.map((team,index)=>{
-    const opponent=teams[1-index];
-    const scratchHigh=team.scratchSeries!=null&&opponent.scratchSeries!=null&&team.scratchSeries>opponent.scratchSeries;
     const games=Array.from({length:gameCount},(_,i)=>{
       const game=team.games[i];
       return scoreCell(game?.total,game?.kind==='win'?'audit-high':'');
     }).join('');
     return `<tr>${index===0?`<th scope="rowgroup" rowspan="2" class="audit-lanes" translate="no">${esc(laneA)}/${esc(laneB)}</th>`:''}
       <th scope="row" class="audit-team" translate="no">${esc(team.name)}</th>${games}
-      ${scoreCell(team.scratchSeries,scratchHigh?'audit-high':'')}
+      ${scoreCell(team.scratchSeries)}
       ${scoreCell(team.series.total,team.series.kind==='win'?'audit-series':'')}
       <td>${esc(team.bonusPoints)}</td><td class="audit-points">${esc(team.points)}</td></tr>`;
   }).join('')}</tbody>`).join('');
   return `<table class="team-audit"><thead><tr>${headers.map(header=>`<th scope="col">${esc(tr(header))}</th>`).join('')}</tr></thead>${groups}</table>
-    <p class="note audit-key"><span class="audit-high">${esc(tr('Higher game or scratch series'))}</span>
+    <p class="note audit-key"><span class="audit-high">${esc(tr('Higher Game with Hdcp'))}</span>
       <span class="audit-series">${esc(tr('Higher series with handicap'))}</span></p>
     <p class="note">${esc(tr('Game totals include handicap. Match points include bonuses.'))}</p>`;
 }

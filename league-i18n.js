@@ -62,7 +62,7 @@
     'Results session':'Jornada de resultados','Choose a session with recorded scores':'Elige una jornada con resultados registrados',
     'Weekly team score audit':'Resumen de resultados por equipo',
     'Next Session':'Siguiente Sesión',
-    'Higher game or scratch series':'Mayor total por juego o serie sin hándicap',
+    'Higher Game with Hdcp':'Mayor juego con hándicap',
     'Higher series with handicap':'Mayor serie con hándicap',
     'Scratch series':'Serie sin hándicap','Places gained':'Lugares ganados','Places lost':'Lugares perdidos',
     'Arrows show places gained or lost since the previous scored session in the same division.':'Las flechas indican cuántos lugares subió o bajó cada equipo en su división desde la última jornada con resultados.',
