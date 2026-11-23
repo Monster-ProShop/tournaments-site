@@ -50,12 +50,24 @@ function printWeeklyAudit(matches){
   const gameCount=Math.max(...matches.map(match=>match.teams[0].games.length));
   const headers=['Lanes','Team',...Array.from({length:gameCount},(_,i)=>`Game ${i+1}`),
     'Scratch series','Series + HCP','Bonus points','Match points'];
-  const rows=matches.flatMap(match=>match.teams.map(team=>[
-    `${match.laneA??'—'}/${match.laneB??'—'}`,team.name,
-    ...Array.from({length:gameCount},(_,i)=>team.games[i]?.total),
-    team.scratchSeries,team.series.total,team.bonusPoints,team.points
-  ]));
-  return `<div class="team-audit">${table(headers,rows)}</div><p class="note">${esc(tr('Game totals include handicap. Match points include bonuses.'))}</p>`;
+  const scoreCell=(value,highlight)=>`<td translate="no">${highlight?`<strong class="${highlight}">${esc(value)}</strong>`:esc(value)}</td>`;
+  const groups=matches.map(({laneA,laneB,teams})=>`<tbody class="audit-match">${teams.map((team,index)=>{
+    const opponent=teams[1-index];
+    const scratchHigh=team.scratchSeries!=null&&opponent.scratchSeries!=null&&team.scratchSeries>opponent.scratchSeries;
+    const games=Array.from({length:gameCount},(_,i)=>{
+      const game=team.games[i];
+      return scoreCell(game?.total,game?.kind==='win'?'audit-high':'');
+    }).join('');
+    return `<tr>${index===0?`<th scope="rowgroup" rowspan="2" class="audit-lanes" translate="no">${esc(laneA)}/${esc(laneB)}</th>`:''}
+      <th scope="row" class="audit-team" translate="no">${esc(team.name)}</th>${games}
+      ${scoreCell(team.scratchSeries,scratchHigh?'audit-high':'')}
+      ${scoreCell(team.series.total,team.series.kind==='win'?'audit-series':'')}
+      <td>${esc(team.bonusPoints)}</td><td class="audit-points">${esc(team.points)}</td></tr>`;
+  }).join('')}</tbody>`).join('');
+  return `<table class="team-audit"><thead><tr>${headers.map(header=>`<th scope="col">${esc(tr(header))}</th>`).join('')}</tr></thead>${groups}</table>
+    <p class="note audit-key"><span class="audit-high">${esc(tr('Higher game or scratch series'))}</span>
+      <span class="audit-series">${esc(tr('Higher series with handicap'))}</span></p>
+    <p class="note">${esc(tr('Game totals include handicap. Match points include bonuses.'))}</p>`;
 }
 function scheduleHTML(session){
   if(!session)return `<p>${esc(tr('All scheduled sessions are complete.'))}</p>`;
@@ -83,7 +95,7 @@ export function reportHTML(report,competition,leagueLogo){
     ?section('Weekly team score audit',printWeeklyAudit(report.weekly.matches||[]))
     :section('Bowler Standings',printBowlerColumns(report.bowlers))+`<p class="note">${t('Pl. = place · G = games · Avg = scratch average · HG = high game · HS = high series. HG, HS and Pins include handicap.')}</p>`;
   const front=`<div class="report-layout front-layout"><div class="team-results">${teams}</div><aside class="report-sidebar">${honors}</aside></div>`;
-  const back=`<div class="report-layout back-layout"><div class="bowler-results">${secondPage}</div><aside class="report-sidebar schedule">${section('Current session to be bowled',lanes)}</aside></div>`;
+  const back=`<div class="report-layout back-layout"><div class="bowler-results">${secondPage}</div><aside class="report-sidebar schedule">${section('Next Session',lanes)}</aside></div>`;
   return `<!doctype html><html lang="${window.LeagueI18n?.language==='es'?'es-MX':'en'}"><head><meta charset="utf-8"><title>${t(title)} · ${esc(competition.name)}</title><style>
     *{box-sizing:border-box}body{margin:0;background:#ddd;color:#191918;font:9pt Arial,sans-serif}header{display:flex;align-items:center;gap:16px;border-bottom:2px solid #b38b35;margin-bottom:12px;padding-bottom:10px}header img{width:70px;height:45px;object-fit:contain}header strong{color:#73551a;font-size:10pt}h1{font-size:18pt;margin:3px 0}h2{font-size:11pt;border-bottom:1px solid #b38b35;margin:10px 0 5px}h4{font-size:9pt;margin:7px 0 3px}p{margin:5px 0}table{width:100%;border-collapse:collapse;table-layout:fixed}th,td{padding:4px 3px;border-bottom:1px solid #ddd;text-align:right;overflow-wrap:anywhere}th{background:#f4ecd9;font-size:.9em;color:#493b20}th:first-child,td:first-child{text-align:left}section{margin-bottom:10px}.sheet{width:8.5in;height:11in;padding:.35in;background:white;margin:16px auto;position:relative}.viewport{height:9.95in;overflow:visible}.content{transform-origin:top left}.footer{position:absolute;bottom:.2in;left:.35in;right:.35in;border-top:1px solid #bbb;padding-top:4px;font-size:8pt;display:flex;justify-content:space-between}.note{font-size:8pt;color:#555}.toolbar{padding:16px;text-align:center}.toolbar button{padding:10px 18px}#overflow{color:#9b1520;font-weight:bold}.columns{columns:2;column-gap:16px}.columns tr{break-inside:avoid}.columns h4{break-after:avoid}
     header .league-report-logo{width:72px;height:45px;margin-left:auto;flex-shrink:0}
@@ -110,8 +122,18 @@ export function reportHTML(report,competition,leagueLogo){
     .team-results tbody tr:nth-child(even),.columns tbody tr:nth-child(even){background:#f7f5ef}
     .standing-place{white-space:nowrap}.standing-up{color:#176033}.standing-down{color:#9b2537}.standing-up,.standing-down{font-weight:bold}
     .team-results th:first-child{width:11%}
-    .team-audit th,.team-audit td{padding:4px 2px}.team-audit th:nth-child(2){width:23%}
-    .team-audit td:nth-child(2),.team-audit th:nth-child(2){text-align:left}.team-audit tbody tr:nth-child(4n+1),.team-audit tbody tr:nth-child(4n+2){background:#f7f5ef}
+    .team-audit th,.team-audit td{padding:4px 2px}
+    .team-audit thead th:first-child{width:9%}.team-audit thead th:nth-child(2){width:22%;text-align:left}
+    .team-audit tbody th{background:transparent;font-size:inherit;color:inherit;text-align:left}
+    .team-audit .audit-team{font-weight:normal}
+    .team-audit .audit-lanes{background:#f6f1e4;vertical-align:middle;white-space:nowrap}
+    .team-audit .audit-match:nth-of-type(odd){background:#faf8f2}
+    .audit-match+.audit-match tr:first-child>*{border-top:2px solid #a68f5d}
+    .team-audit .audit-points{font-weight:bold}
+    .audit-high,.audit-series{display:inline-block;padding:1px 3px;border-radius:2px}
+    .audit-high{color:#205734;background:#e5f3e8;box-shadow:inset 0 0 0 1px #a3c7aa}
+    .audit-series{color:#674205;background:#fff0cb;box-shadow:inset 0 0 0 1px #d6ae58}
+    .audit-key{display:flex;gap:8px;flex-wrap:wrap}
     @page{size:letter portrait;margin:0}@media print{body{background:white}.toolbar{display:none}.sheet{margin:0;break-after:page;overflow:hidden}.viewport{overflow:hidden}.sheet:last-child{break-after:auto}body.overfull .sheet{display:none}body.overfull .toolbar{display:block}body.overfull .toolbar button{display:none}*{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
     </style></head><body><div class="toolbar"><button id="print">${t('Print / Save PDF')}</button><p>${t('US letter · two pages · print double-sided, flip on long edge. Disable browser headers and footers.')}</p><p id="overflow" hidden>${t('This league exceeds two readable pages. No rows were omitted. Reduce the report scope before printing.')}</p></div>
     <article class="sheet"><div class="viewport"><div class="content">${header}${front}</div></div><footer class="footer"><span>Tournaments by ProDrillOS</span><span>1 / 2</span></footer></article>
